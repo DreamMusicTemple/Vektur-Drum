@@ -31,12 +31,13 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
     private var _outputBusses: AUAudioUnitBusArray!
     private var _inputBusses: AUAudioUnitBusArray!
     private var _parameterTree: AUParameterTree?
-    // render-thread scratch, allocated in allocateRenderResources
-    private var midiScratch: UnsafeMutablePointer<vd_midi_event>?
-    private var busScratch: UnsafeMutablePointer<UnsafeMutablePointer<Float>?>?   // [L, R] bus pointer slots for vd_engine_render
+    // Pointer scratch is allocated once for the unit's lifetime. A render block may outlive a
+    // resource reallocation, so these addresses must never be freed/replaced while a block can use them.
+    private static let midiCapacity = 512
+    private let midiScratch = UnsafeMutablePointer<vd_midi_event>.allocate(capacity: midiCapacity)
+    private let busScratch = UnsafeMutablePointer<UnsafeMutablePointer<Float>?>.allocate(capacity: 2)
     private var inputScratch: AVAudioPCMBuffer?
     private var outputScratch: AVAudioPCMBuffer?
-    private static let midiCapacity = 512
 
     public override init(componentDescription: AudioComponentDescription, options: AudioComponentInstantiationOptions = []) throws {
         isEffect = componentDescription.componentType != kAudioUnitType_MusicDevice
@@ -48,6 +49,7 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         _inputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .input, busses: inputBus.map { [$0] } ?? [])
         guard let e = vd_engine_create(48000, 4096) else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(kAudioUnitErr_FailedInitialization)) }
         engine = e
+        busScratch.initialize(repeating: nil, count: 2)
         keeper = AUStateKeeper(engine: e, library: nil)
         _parameterTree = Self.makeParameterTree(engine: e)
         maximumFramesToRender = 4096
@@ -55,7 +57,12 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         if isEffect { vd_engine_set_param(e, ParameterID.master(.inputDrums).address, 0); vd_engine_set_param(e, ParameterID.master(.inputLevel).address, 1) }
         var c = vd_command(); c.type = UInt16(VD_CMD_ENABLE.rawValue); c.u.value = 1; _ = vd_engine_send(e, &c)
     }
-    deinit { if let e = engine { vd_engine_destroy(e) }; midiScratch?.deallocate(); busScratch?.deallocate() }
+    deinit {
+        if let e = engine { vd_engine_destroy(e) }
+        midiScratch.deallocate()
+        busScratch.deinitialize(count: 2)
+        busScratch.deallocate()
+    }
 
     // ---------------------------------------------------------------- buses, parameters
     public override var outputBusses: AUAudioUnitBusArray { _outputBusses }
@@ -118,18 +125,20 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         let fmt = AVAudioFormat(standardFormatWithSampleRate: sr, channels: 2)!
         inputScratch = isEffect ? AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: maxF) : nil
         outputScratch = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: maxF)
-        midiScratch?.deallocate(); midiScratch = .allocate(capacity: Self.midiCapacity)
-        if busScratch == nil { busScratch = .allocate(capacity: 2); busScratch!.initialize(repeating: nil, count: 2) }
+        // midiScratch and busScratch are lifetime allocations; do not replace them here.
     }
     public override func deallocateRenderResources() { super.deallocateRenderResources(); inputScratch = nil; outputScratch = nil }
 
     public override var internalRenderBlock: AUInternalRenderBlock {
         // Everything the block needs, captured as plain values / pointers (never `self`).
         let e = engine!, effect = isEffect, midiCap = Self.midiCapacity
-        let midi = midiScratch!, bus = busScratch!, inBuf = inputScratch, outBuf = outputScratch!
+        let maxFrames = maximumFramesToRender
+        let midi = midiScratch, bus = busScratch, inBuf = inputScratch, outBuf = outputScratch!
         let inList = inBuf?.mutableAudioBufferList, outL = outBuf.floatChannelData![0], outR = outBuf.floatChannelData![1]
         let musical = musicalContextBlock, transport = transportStateBlock
         return { actionFlags, timestamp, frameCount, outputBusNumber, outputData, realtimeEventListHead, pullInputBlock in
+            guard frameCount > 0 else { return noErr }
+            guard frameCount <= maxFrames else { return kAudioUnitErr_TooManyFramesToProcess }
             var ctx = vd_render_context()
             ctx.tempo = 120
             var tempo = 0.0, beat = 0.0
