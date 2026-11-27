@@ -112,14 +112,7 @@ jobs:
                                       .tint(project.selectedPattern == p ? .orange : .gray)
                               }
                           }
-                          List(0..<project.trackCount, id: \.self) { track in
-                              HStack {
-                                  Text("TRACK \(track + 1)")
-                                  Spacer()
-                                  Text(project.tracks[track].name)
-                                      .foregroundStyle(.secondary)
-                              }
-                          }
+                          Text("TRACKS: \(project.trackCount)")
                           Button(playing ? "STOP" : "PLAY") { playing.toggle() }
                               .font(.headline).frame(maxWidth: .infinity).padding()
                               .background(.orange, in: RoundedRectangle(cornerRadius: 12))
