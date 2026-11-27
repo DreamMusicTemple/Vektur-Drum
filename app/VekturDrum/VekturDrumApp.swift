@@ -35,28 +35,38 @@ final class StandaloneHost {
 
     func start() async {
         guard controller == nil else { return }
+        // 1 · the instrument (needs no audio hardware)
+        let unit: AVAudioUnit
+        do {
+            AUAudioUnit.registerSubclass(VekturDrumAudioUnit.self, as: Self.description, name: "Dream Music Temple: Vektur Drum", version: 0x0000_0901)
+            unit = try await AVAudioUnit.instantiate(with: Self.description, options: [])
+        } catch let e { error = "The drum machine could not load: \(e.localizedDescription)"; return }
+        guard let au = unit.auAudioUnit as? VekturDrumAudioUnit else { error = "The audio unit did not load."; return }
+        node = unit
+        if let starter = DrumController.starterState() { au.keeper?.restore(starter, reason: .song) }   // the web app's new set
+        controller = DrumController(unit: au)
+        // 2 · sound: if the audio session or engine can't start now (another app holds it, no output), the panel still
+        //     works and audio is retried on the next interruption end / route change
+        engine.attach(unit)
         do {
             let s = AVAudioSession.sharedInstance()
             try s.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try? s.setPreferredIOBufferDuration(256.0 / 48000)
             try s.setActive(true)
-            AUAudioUnit.registerSubclass(VekturDrumAudioUnit.self, as: Self.description, name: "Dream Music Temple: Vektur Drum", version: 0x0000_0901)
-            let unit = try await AVAudioUnit.instantiate(with: Self.description, options: [])
-            engine.attach(unit)
-            let fmt = engine.outputNode.outputFormat(forBus: 0)
-            let stereo = AVAudioFormat(standardFormatWithSampleRate: fmt.sampleRate > 0 ? fmt.sampleRate : 48000, channels: 2)
-            engine.connect(unit, to: engine.mainMixerNode, format: stereo)
-            engine.prepare()
-            try engine.start()
-            node = unit
-            guard let au = unit.auAudioUnit as? VekturDrumAudioUnit else { error = "The audio unit did not load."; return }
-            if let starter = DrumController.starterState() { au.keeper?.restore(starter, reason: .song) }   // the web app's new set
-            controller = DrumController(unit: au)
-            observe()
-            if ReferenceRender.requested, let c = controller { await ReferenceRender.run(c) }
-        } catch let e {
-            error = "Audio could not start: \(e.localizedDescription)"
-        }
+        } catch let e { NSLog("Vektur Drum: audio session: %@", e.localizedDescription) }
+        connectAndStart()
+        observe()
+        if ReferenceRender.requested, let c = controller { await ReferenceRender.run(c) }
+    }
+
+    private func connectAndStart() {
+        guard let unit = node else { return }
+        let fmt = engine.outputNode.outputFormat(forBus: 0)
+        let stereo = AVAudioFormat(standardFormatWithSampleRate: fmt.sampleRate > 0 ? fmt.sampleRate : 48000, channels: 2)
+        engine.disconnectNodeOutput(unit)
+        engine.connect(unit, to: engine.mainMixerNode, format: stereo)
+        engine.prepare()
+        do { try engine.start() } catch let e { NSLog("Vektur Drum: audio engine: %@", e.localizedDescription) }
     }
 
     private func observe() {
@@ -71,6 +81,6 @@ final class StandaloneHost {
     }
     private func restart() {
         try? AVAudioSession.sharedInstance().setActive(true)
-        if !engine.isRunning { engine.prepare(); try? engine.start() }
+        if !engine.isRunning { connectAndStart() }
     }
 }
