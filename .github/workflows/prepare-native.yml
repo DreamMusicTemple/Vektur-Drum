@@ -71,6 +71,172 @@ jobs:
           xcuserdata/
           EOF
 
+      - name: Generate native Xcode project scaffolding
+        shell: bash
+        run: |
+          brew install xcodegen
+          mkdir -p VekturDrum/ios/VekturDrumApp VekturDrum/ios/VekturDrumAU
+          cat > VekturDrum/ios/VekturDrumApp/VekturDrumApp.swift <<'SWIFT'
+          import SwiftUI
+          import VekturDrumCore
+
+          @main
+          struct VekturDrumApp: App {
+              @State private var project = DrumProject()
+              var body: some Scene {
+                  WindowGroup {
+                      DrumHomeView(project: $project)
+                  }
+              }
+          }
+
+          struct DrumHomeView: View {
+              @Binding var project: DrumProject
+              @State private var playing = false
+              var body: some View {
+                  NavigationStack {
+                      VStack(spacing: 18) {
+                          Text("VEKTUR DRUM").font(.largeTitle.bold())
+                          Text("Native drum machine • 12 tracks • 8 patterns")
+                              .font(.subheadline).foregroundStyle(.secondary)
+                          HStack {
+                              Text("TEMPO")
+                              Spacer()
+                              Text("\(Int(project.tempo)) BPM").monospacedDigit()
+                          }
+                          Slider(value: $project.tempo, in: 40...240, step: 1)
+                          HStack {
+                              ForEach(0..<8, id: \.self) { p in
+                                  Button("\(p + 1)") { project.selectedPattern = p }
+                                      .buttonStyle(.borderedProminent)
+                                      .tint(project.selectedPattern == p ? .orange : .gray)
+                              }
+                          }
+                          List(0..<project.trackCount, id: \.self) { track in
+                              HStack {
+                                  Text("TRACK \(track + 1)")
+                                  Spacer()
+                                  Text(project.tracks[track].name)
+                                      .foregroundStyle(.secondary)
+                              }
+                          }
+                          Button(playing ? "STOP" : "PLAY") { playing.toggle() }
+                              .font(.headline).frame(maxWidth: .infinity).padding()
+                              .background(.orange, in: RoundedRectangle(cornerRadius: 12))
+                              .foregroundStyle(.black)
+                      }.padding()
+                  }
+              }
+          }
+          SWIFT
+          cat > VekturDrum/ios/VekturDrumAU/AUViewController.swift <<'SWIFT'
+          import CoreAudioKit
+          import AudioToolbox
+          import AVFoundation
+          import VekturDrumAudio
+
+          public final class AUViewController: AUViewController, AUAudioUnitFactory {
+              public override func viewDidLoad() {
+                  super.viewDidLoad()
+                  view.backgroundColor = .systemBackground
+                  let label = UILabel()
+                  label.text = "VEKTUR DRUM"
+                  label.font = .boldSystemFont(ofSize: 24)
+                  label.translatesAutoresizingMaskIntoConstraints = false
+                  view.addSubview(label)
+                  NSLayoutConstraint.activate([
+                      label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                      label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+                  ])
+              }
+
+              public func createAudioUnit(with componentDescription: AudioComponentDescription) throws -> AUAudioUnit {
+                  try VekturDrumAudioUnit(componentDescription: componentDescription, options: [])
+              }
+          }
+          SWIFT
+          cat > VekturDrum/ios/VekturDrumApp/Info.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>CFBundleDisplayName</key><string>Vektur Drum</string>
+          <key>ITSAppUsesNonExemptEncryption</key><false/>
+          <key>UIBackgroundModes</key><array><string>audio</string></array>
+          </dict></plist>
+          PLIST
+          cat > VekturDrum/ios/VekturDrumAU/Info.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>CFBundleDisplayName</key><string>Vektur Drum AU</string>
+          <key>NSExtension</key><dict>
+          <key>NSExtensionPointIdentifier</key><string>com.apple.AudioUnit-UI</string>
+          <key>NSExtensionPrincipalClass</key><string>$(PRODUCT_MODULE_NAME).AUViewController</string>
+          <key>NSExtensionAttributes</key><dict>
+          <key>AudioComponents</key><array>
+          <dict><key>name</key><string>Dream Music Temple: Vektur Drum</string><key>description</key><string>Vektur Drum</string><key>manufacturer</key><string>DMTp</string><key>type</key><string>aumu</string><key>subtype</key><string>vkdr</string><key>version</key><integer>2305</integer><key>sandboxSafe</key><true/><key>tags</key><array><string>Drums</string><string>Synthesizer</string></array></dict>
+          <dict><key>name</key><string>Dream Music Temple: Vektur Drum FX</string><key>description</key><string>Vektur Drum effects and Slicer</string><key>manufacturer</key><string>DMTp</string><key>type</key><string>aufx</string><key>subtype</key><string>vkfx</string><key>version</key><integer>2305</integer><key>sandboxSafe</key><true/><key>tags</key><array><string>Effects</string><string>Delay</string><string>Reverb</string></array></dict>
+          <dict><key>name</key><string>Dream Music Temple: Vektur Drum FX MIDI</string><key>description</key><string>Vektur Drum effects playable</string><key>manufacturer</key><string>DMTp</string><key>type</key><string>aumf</string><key>subtype</key><string>vkfm</string><key>version</key><integer>2305</integer><key>sandboxSafe</key><true/><key>tags</key><array><string>Effects</string><string>Drums</string></array></dict>
+          </array></dict></dict></dict>
+          </plist>
+          PLIST
+          cat > VekturDrum/ios/project.yml <<'YAML'
+          name: VekturDrum
+          options:
+            bundleIdPrefix: com.dreammusictemple
+            deploymentTarget:
+              iOS: "17.0"
+          packages:
+            VekturDrumKit:
+              path: ../native
+          targets:
+            Vektur Drum:
+              type: application
+              platform: iOS
+              sources:
+                - path: VekturDrumApp
+              info:
+                path: VekturDrumApp/Info.plist
+              settings:
+                base:
+                  PRODUCT_BUNDLE_IDENTIFIER: com.dreammusictemple.vekturdrum
+                  PRODUCT_NAME: Vektur Drum
+                  SWIFT_VERSION: 5.0
+                  TARGETED_DEVICE_FAMILY: "1,2"
+                  GENERATE_INFOPLIST_FILE: YES
+                  CODE_SIGN_STYLE: Automatic
+              dependencies:
+                - package: VekturDrumKit
+                  product: VekturDrumCore
+                - package: VekturDrumKit
+                  product: VekturDrumAudio
+                - target: Vektur Drum AU
+                  embed: true
+            Vektur Drum AU:
+              type: app-extension
+              platform: iOS
+              sources:
+                - path: VekturDrumAU
+              info:
+                path: VekturDrumAU/Info.plist
+              settings:
+                base:
+                  PRODUCT_BUNDLE_IDENTIFIER: com.dreammusictemple.vekturdrum.au
+                  PRODUCT_NAME: Vektur Drum AU
+                  SWIFT_VERSION: 5.0
+                  APPLICATION_EXTENSION_API_ONLY: YES
+                  SKIP_INSTALL: YES
+                  GENERATE_INFOPLIST_FILE: YES
+                  CODE_SIGN_STYLE: Automatic
+              dependencies:
+                - package: VekturDrumKit
+                  product: VekturDrumAudio
+          YAML
+          cd VekturDrum/ios
+          xcodegen generate
+          xcodebuild -list -project VekturDrum.xcodeproj
+          xcodebuild -project VekturDrum.xcodeproj -scheme "Vektur Drum" -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+
       - name: Update parameter-count assertion for 0.9.1 long-decay control
         shell: bash
         run: |
