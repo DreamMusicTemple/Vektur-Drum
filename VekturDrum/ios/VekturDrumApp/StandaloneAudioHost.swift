@@ -49,7 +49,8 @@ final class StandaloneAudioHost: ObservableObject, StandaloneAudioHosting {
 
         let renderEngine = drum.rawEngine
         let buses = busSlots
-        let renderTempo = 120.0
+        // Capture the project tempo before audio starts; the render callback never reads SwiftUI state.
+        let renderTempo = tempo.isFinite ? min(max(tempo, 20.0), 300.0) : 120.0
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
         let source = AVAudioSourceNode(format: format) { isSilence, _, frameCount, audioBufferList in
             guard frameCount > 0 else { return noErr }
