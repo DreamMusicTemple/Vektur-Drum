@@ -11,6 +11,10 @@ jobs:
   lookup:
     runs-on: ubuntu-24.04
     steps:
+      - name: Repository secret names (names only, never values)
+        env:
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+        run: python3 -c "import json,os; print('secret names:', sorted(k for k in json.loads(os.environ['ALL_SECRETS']) if k.lower() != 'github_token'))"
       - name: Which secrets are set (names only)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
