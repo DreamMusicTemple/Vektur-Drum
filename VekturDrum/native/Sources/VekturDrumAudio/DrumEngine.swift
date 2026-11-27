@@ -19,12 +19,23 @@ public final class DrumEngine: DrumEngineControl {
     /// The C engine. Hand this (not `self`) to the render block: it is what vd_engine_render needs, and capturing it
     /// keeps Swift objects, reference counting and the main actor out of the audio thread.
     public let rawEngine: OpaquePointer
+    private let ownsEngine: Bool
 
     public init?(sampleRate: Double, maxFrames: UInt32) {
         guard let e = vd_engine_create(sampleRate, maxFrames) else { return nil }
         rawEngine = e
+        ownsEngine = true
     }
-    deinit { vd_engine_destroy(rawEngine) }
+
+    /// Non-owning control facade for an AUv3 instance. The audio unit remains the engine's owner.
+    public init(borrowing engine: OpaquePointer) {
+        rawEngine = engine
+        ownsEngine = false
+    }
+
+    deinit {
+        if ownsEngine { vd_engine_destroy(rawEngine) }
+    }
 
     /// Audio stopped (route or sample-rate change): rebuilds the DSP buffers, keeps the music.
     @discardableResult public func prepare(sampleRate: Double, maxFrames: UInt32) -> Bool {
