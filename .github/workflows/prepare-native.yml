@@ -244,6 +244,10 @@ jobs:
           p = Path("VekturDrum/ios/VekturDrumAU/Info.plist")
           p.write_text(p.read_text().replace("$(PRODUCT_MODULE_NAME).AUViewController",
                                              "$(PRODUCT_MODULE_NAME).VekturDrumAUViewController"))
+          p = Path("VekturDrum/ios/VekturDrumApp/VekturDrumApp.swift")
+          s = p.read_text().replace("List(0..<project.trackCount, id: \\.self) { track in",
+                                    "ForEach(0..<project.trackCount, id: \\.self) { track in")
+          p.write_text(s)
           PY
           cd VekturDrum/ios
           xcodegen generate
