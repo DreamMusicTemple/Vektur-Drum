@@ -53,11 +53,31 @@ jobs:
       - name: Run Swift package tests
         run: swift test --package-path VekturDrum/native
 
+      - name: Create unsigned device archive for packaging verification
+        working-directory: VekturDrum/ios
+        run: |
+          xcodebuild \
+            -project VekturDrum.xcodeproj \
+            -scheme "Vektur Drum" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/VekturDrum-Unsigned.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            archive
+          APP="$RUNNER_TEMP/VekturDrum-Unsigned.xcarchive/Products/Applications/Vektur Drum.app"
+          test -d "$APP"
+          test -d "$APP/PlugIns/Vektur Drum AU.appex"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionAttributes:AudioComponents' "$APP/PlugIns/Vektur Drum AU.appex/Info.plist"
+
       - name: Upload simulator build product
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: VekturDrum-iOS-Simulator-Build
-          path: ${{ runner.temp }}/VekturDrumDerivedData/Build/Products/Debug-iphonesimulator/VekturDrum.app
+          path: |
+            ${{ runner.temp }}/VekturDrumDerivedData/Build/Products/Debug-iphonesimulator/VekturDrum.app
+            ${{ runner.temp }}/VekturDrum-Unsigned.xcarchive
           if-no-files-found: warn
           retention-days: 7
