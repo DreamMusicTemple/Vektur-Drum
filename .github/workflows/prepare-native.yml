@@ -1,0 +1,93 @@
+name: Prepare native Swift package
+
+on:
+  push:
+    branches: [ "native/prepare-swift-package" ]
+    paths:
+      - ".github/workflows/prepare-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: macos-15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract source and apply the two reviewed Swift fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f VekturDrum-0.9.1.zip
+          unzip -q VekturDrum-0.9.1.zip
+          test -f VekturDrum/native/Package.swift
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("VekturDrum/native/Sources/VekturDrumCore/FactoryKits.swift")
+          s = p.read_text()
+          old = "public static func load(bundle: Bundle = .module) -> [Kit] {"
+          new = """public static func load() -> [Kit] { load(bundle: .module) }
+
+              public static func load(bundle: Bundle) -> [Kit] {"""
+          if old not in s:
+              raise SystemExit("A1: expected FactoryKits signature not found; refusing to guess")
+          p.write_text(s.replace(old, new, 1))
+
+          p = Path("VekturDrum/native/Sources/VekturDrumCore/Persistence.swift")
+          s = p.read_text()
+          if "public struct DecodedSample" not in s:
+              raise SystemExit("A2: DecodedSample declaration not found")
+          start = s.index("public struct DecodedSample")
+          end = s.find("\n}", start)
+          if end < 0:
+              raise SystemExit("A2: could not locate DecodedSample struct end")
+          block = s[start:end]
+          if "public init(channels:" not in block:
+              marker = "public var sampleRate: Double"
+              if marker not in block:
+                  raise SystemExit("A2: expected sampleRate property not found")
+              insert = block.index(marker)
+              # Add initializer immediately after the two stored properties.
+              close = block.find("\n", insert)
+              block = block[:close+1] + """\n    public init(channels: [[Float]], sampleRate: Double) {
+              self.channels = channels
+              self.sampleRate = sampleRate
+          }
+          """ + block[close+1:]
+              s = s[:start] + block + s[end:]
+              p.write_text(s)
+          PY
+
+      - name: Add ignore rules
+        shell: bash
+        run: |
+          cat >> .gitignore <<'EOF'
+          .build/
+          *.xcarchive
+          DerivedData/
+          node_modules/
+          xcuserdata/
+          EOF
+
+      - name: Compile and test Swift package
+        working-directory: VekturDrum/native
+        run: |
+          swift --version
+          swift build
+          swift test
+
+      - name: Commit extracted source and minimal fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VekturDrum .gitignore
+          git diff --cached --check
+          git commit -m "Add native Vektur Drum source and fix Swift package API"
+          git push origin HEAD
