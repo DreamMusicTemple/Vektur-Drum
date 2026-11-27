@@ -7,6 +7,15 @@ import VekturDrumDSP
 
 @MainActor
 public final class DrumEngine: DrumEngineControl {
+    // vd_engine_send is a single-producer queue. All Swift-side producers share this lock;
+    // it is never acquired by the render thread.
+    private static let commandQueueLock = NSLock()
+    private static func enqueue(_ engine: OpaquePointer, _ command: inout vd_command) -> Bool {
+        commandQueueLock.lock()
+        defer { commandQueueLock.unlock() }
+        return vd_engine_send(engine, &command)
+    }
+
     /// The C engine. Hand this (not `self`) to the render block: it is what vd_engine_render needs, and capturing it
     /// keeps Swift objects, reference counting and the main actor out of the audio thread.
     public nonisolated let rawEngine: OpaquePointer
@@ -39,7 +48,7 @@ public final class DrumEngine: DrumEngineControl {
             v.crush = st.crush; v.delay_send = st.delaySend; v.reverb_send = st.reverbSend; v.chance = st.chance; v.fm_ratio = st.fmRatio
             v.ring_on = st.ringOn ? 1 : 0; v.ring_master = st.ringMaster; v.ring_slaves = st.ringSlaves; v.ring_amount = st.ringAmount; v.ring_hz = st.ringHz; v.fold = st.fold
             c.u.step = v
-            guard vd_engine_send(rawEngine, &c) else { return false }
+            guard Self.enqueue(rawEngine, &c) else { return false }
             // NEW (0.8): the step's pitch shift and spectral settings follow in their own command (a command stays ≤ 64 bytes)
             type(VD_CMD_SET_STEP_FX)
             c.u.step_fx = EngineSamples.stepFx(st)
@@ -72,7 +81,7 @@ public final class DrumEngine: DrumEngineControl {
         case let .setLfoPoints(lfo, start, pts):
             type(VD_CMD_SET_LFO_POINTS); Self.fillLfo(&c, lfo: lfo, start: start, pts)
         }
-        return vd_engine_send(rawEngine, &c)
+        return Self.enqueue(rawEngine, &c)
     }
 
     // ---- samples (decoded off the audio thread; the engine takes ownership)
@@ -150,7 +159,7 @@ public final class DrumEngine: DrumEngineControl {
             for h in 0..<2 {
                 var c = vd_command(); c.type = UInt16(VD_CMD_SET_LFO_POINTS.rawValue)
                 fillLfo(&c, lfo: l, start: h * 8, row[(h * 8)..<(h * 8 + 8)].map { Float($0) })
-                _ = vd_engine_send(engine, &c)
+                _ = enqueue(engine, &c)
             }
         }
     }
