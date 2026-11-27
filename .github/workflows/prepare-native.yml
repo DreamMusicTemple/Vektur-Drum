@@ -71,6 +71,20 @@ jobs:
           xcuserdata/
           EOF
 
+      - name: Update parameter-count assertion for 0.9.1 long-decay control
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("VekturDrum/native/Tests/VekturDrumCoreTests/ParameterLayoutTests.swift")
+          s = p.read_text()
+          old = "XCTAssertEqual(ParameterSpec.track.count, 44)   // 0.9: + Metalise, Resample, transient mode / sens, slice, tune mode, stretch, sampler model"
+          new = "XCTAssertEqual(ParameterSpec.track.count, 45)   // 0.9.1 adds the long-decay control at stable address 56"
+          if old not in s:
+              raise SystemExit("Parameter count assertion anchor not found")
+          p.write_text(s.replace(old, new, 1))
+          PY
+
       - name: Apply remaining reviewed Swift model and test fixes
         shell: bash
         run: |
