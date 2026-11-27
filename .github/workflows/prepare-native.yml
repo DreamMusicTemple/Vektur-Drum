@@ -92,3 +92,4 @@ jobs:
           swift test
 
 # Trigger corrected package preparation run.
+# Parameter generator fix: tracks 10–12 are not master parameters.
