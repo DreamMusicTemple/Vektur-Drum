@@ -20,7 +20,7 @@ targets:
         PRODUCT_NAME: Vektur Drum
         SWIFT_VERSION: 5.0
         TARGETED_DEVICE_FAMILY: "1,2"
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: VekturDrumApp/VekturDrumApp.entitlements
         MARKETING_VERSION: 0.9.1
@@ -48,7 +48,7 @@ targets:
         SWIFT_VERSION: 5.0
         APPLICATION_EXTENSION_API_ONLY: YES
         SKIP_INSTALL: YES
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: VekturDrumAU/VekturDrumAU.entitlements
         MARKETING_VERSION: 0.9.1
