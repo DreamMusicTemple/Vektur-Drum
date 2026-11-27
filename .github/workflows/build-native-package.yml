@@ -1,0 +1,40 @@
+name: Build Vektur Drum native Swift package
+
+on:
+  push:
+    branches: [ "ci/inspect-vektur-drum" ]
+    paths:
+      - ".github/workflows/build-native-package.yml"
+      - "VekturDrum-0.9.1.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract native source
+        run: |
+          set -euo pipefail
+          mkdir -p native-project
+          unzip -q VekturDrum-0.9.1.zip -d native-project
+          test -f native-project/VekturDrum/native/Package.swift
+
+      - name: Show toolchain and package targets
+        working-directory: native-project/VekturDrum/native
+        run: |
+          xcodebuild -version
+          swift --version
+          swift package describe
+
+      - name: Build native Swift package
+        working-directory: native-project/VekturDrum/native
+        run: swift build -v
+
+      - name: Run Swift package tests
+        working-directory: native-project/VekturDrum/native
+        run: swift test -v
