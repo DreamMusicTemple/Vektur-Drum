@@ -11,7 +11,7 @@ final class ParameterLayoutTests: XCTestCase {
     }
 
     func testGeneratedTableMatchesTheEnums() {
-        XCTAssertEqual(ParameterSpec.track.count, 44)   // 0.9: + Metalise, Resample, transient mode / sens, slice, tune mode, stretch, sampler model
+        XCTAssertEqual(ParameterSpec.track.count, 45)   // 0.9.1 adds the long-decay control at stable address 56
         for spec in ParameterSpec.track { XCTAssertNotNil(TrackParameter(rawValue: spec.index), "\(spec.key) has a TrackParameter case") }
         for spec in ParameterSpec.master where spec.index < 32 { XCTAssertNotNil(MasterParameter(rawValue: spec.index), spec.key) }
         XCTAssertEqual(ParameterSpec.trackDefaults.count, 12)
