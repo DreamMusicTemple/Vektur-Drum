@@ -13,8 +13,8 @@
   <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
   <key>NSExtension</key>
   <dict>
-    <key>NSExtensionPointIdentifier</key><string>com.apple.AudioUnit</string>
-    <key>NSExtensionPrincipalClass</key><string>$(PRODUCT_MODULE_NAME).VekturDrumAUViewController</string>
+    <key>NSExtensionPointIdentifier</key><string>com.apple.AudioUnit-UI</string>
+    <key>NSExtensionMainStoryboard</key><string>MainInterface</string>
     <key>NSExtensionAttributes</key>
     <dict>
       <key>AudioComponents</key>
