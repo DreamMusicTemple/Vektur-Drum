@@ -22,6 +22,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: VekturDrumApp/VekturDrumApp.entitlements
+        MARKETING_VERSION: 0.9.1
+        CURRENT_PROJECT_VERSION: 1
     dependencies:
       - package: VekturDrumKit
         product: VekturDrumCore
@@ -45,6 +48,9 @@ targets:
         SKIP_INSTALL: YES
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: VekturDrumAU/VekturDrumAU.entitlements
+        MARKETING_VERSION: 0.9.1
+        CURRENT_PROJECT_VERSION: 1
     dependencies:
       - package: VekturDrumKit
         product: VekturDrumAudio
