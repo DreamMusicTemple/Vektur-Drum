@@ -71,6 +71,20 @@ jobs:
           xcuserdata/
           EOF
 
+      - name: Fix multi-digit track filtering in parameter generator
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("VekturDrum/tools/gen_native_params.js")
+          s = p.read_text()
+          old = r"!/^t\d\./.test"
+          new = r"!/^t\d+\./.test"
+          if old not in s:
+              raise SystemExit("Expected single-digit track filter not found")
+          p.write_text(s.replace(old, new))
+          PY
+
       - name: Regenerate native parameter tables from source of truth
         run: node VekturDrum/tools/gen_native_params.js
 
