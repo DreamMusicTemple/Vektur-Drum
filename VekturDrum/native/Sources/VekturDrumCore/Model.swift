@@ -123,6 +123,11 @@ public enum TrackEngineKind: Int, Codable, CaseIterable, Sendable {   // vd_trac
 public struct SampleRef: Codable, Hashable, Sendable {
     public var key: String           // content hash
     public var name: String
+
+    public init(key: String, name: String) {
+        self.key = key
+        self.name = name
+    }
 }
 
 /// NEW (0.9): a track's sample editor data (BREAK LAB) — the transient marks, the slices and their settings, the
