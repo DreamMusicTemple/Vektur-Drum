@@ -12,6 +12,8 @@ struct VekturDrumApp: App {
                 .task {
                     do {
                         try await host.start()
+                        host.tempo = project.tempo
+                        host.engine?.sync(from: project)
                     } catch {
                         // The screen remains available and exposes the audio-start failure.
                     }
@@ -36,9 +38,17 @@ struct DrumHomeView: View {
                             .font(.caption2.monospaced())
                             .foregroundStyle(host.isRunning ? .green : .secondary)
                     }
-                    Spacer()
                     Text("\(Int(project.tempo)) BPM")
                         .font(.headline.monospacedDigit())
+                }
+
+                HStack {
+                    Text("TEMPO")
+                        .font(.caption.bold())
+                    Slider(value: $project.tempo, in: 40...240, step: 1)
+                    Text("\(Int(project.tempo))")
+                        .font(.caption.monospacedDigit())
+                        .frame(width: 34, alignment: .trailing)
                 }
 
                 HStack(spacing: 6) {
@@ -117,6 +127,9 @@ struct DrumHomeView: View {
             .padding()
             .navigationTitle("Sequencer")
             .navigationBarTitleDisplayMode(.inline)
+        }
+        .onChange(of: project.tempo) { _, tempo in
+            host.tempo = tempo
         }
         .onChange(of: project.selectedPattern) { _, pattern in
             _ = host.engine?.send(.selectPattern(pattern))
