@@ -157,6 +157,11 @@ public final class AUStateKeeper: @unchecked Sendable {
     }
     /// Parameters, then the whole sequence in one hand-off.
     private func apply(_ p: DrumProject, stopTransport: Bool) {
+        Self.applyProject(p, to: engine, stopTransport: stopTransport)
+    }
+
+    /// Shared full-sequence hand-off. Uses the engine's atomic sequence swap instead of flooding its SPSC command queue.
+    static func applyProject(_ p: DrumProject, to engine: OpaquePointer, stopTransport: Bool) {
         for t in 0..<TrackLimits.playable.upperBound {
             for spec in ParameterSpec.track {
                 let v = p.tracks[t].values[spec.key] ?? ParameterSpec.trackDefaults[t][spec.key] ?? spec.defaultValue
