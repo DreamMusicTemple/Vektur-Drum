@@ -1,0 +1,51 @@
+name: Native build
+
+# Compiles the Swift package (VekturDrumKit) on a Mac for macOS and iOS, runs its XCTests, and runs the C++ engine
+# suite (tests/run_native.sh: engine tests, sanitizers, strict parity with the web engine ≤ 1e-6).
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash   # -eo pipefail: a failing build fails the step even when piped through tee
+
+jobs:
+  swift:
+    name: Swift package (macOS + iOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: xcodebuild -version && swift --version
+      - name: Build (macOS)
+        working-directory: native
+        run: swift build 2>&1 | tee ../swift-build.log
+      - name: Test (macOS)
+        working-directory: native
+        run: swift test 2>&1 | tee ../swift-test.log
+      - name: Build (iOS device)
+        working-directory: native
+        run: |
+          set -o pipefail
+          xcodebuild -scheme VekturDrumKit-Package -destination 'generic/platform=iOS' -skipPackagePluginValidation build 2>&1 | tee ../ios-build.log | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" ../ios-build.log
+      - name: Keep logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-logs
+          path: "*.log"
+
+  dsp:
+    name: C++ engine suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Engine tests, sanitizers, strict parity
+        run: sh tests/run_native.sh
