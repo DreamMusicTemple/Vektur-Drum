@@ -52,6 +52,7 @@ const SCREENS = [
 
 const b = await chromium.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome' });
 const index = [];
+const scales = {};
 const dump = () => {   // every visible element: what a native view must reproduce
   const rows = [], seen = new Set();
   for (const e of document.querySelectorAll('body *')) {
@@ -74,6 +75,7 @@ for (const [sz, w, h] of SIZES) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, hasTouch: /iphone|ipad/.test(sz) });
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(url); await p.waitForSelector('.dm'); await p.waitForTimeout(250);
+    await p.evaluate(() => { const v = document.documentElement.style.getPropertyValue('--scale') || '1'; const st = document.createElement('style'); st.textContent = `:root{--scale:${v} !important}`; document.head.appendChild(st); });   // full-page captures resize the page, which would re-run fitScale without touch: keep the device's scale
     for (const s of setups) await p.evaluate(`(${SETUP[s].toString()})()`);
     if (open === 'HOLD') {
       const r = await p.locator('.kcell[data-mod-key]').first().boundingBox();
@@ -81,8 +83,9 @@ for (const [sz, w, h] of SIZES) {
     } else if (open) await p.evaluate(`(async () => { ${open} ${pause(120)} })()`);
     await p.waitForTimeout(250); await p.evaluate(() => { const t = document.getElementById('toast'); if (t) t.classList.remove('on'); }); await p.waitForTimeout(300);   // no transient messages
     const file = `${sz}/${name}.png`; fs.mkdirSync(path.join(out, sz), { recursive: true });
-    await p.screenshot({ path: path.join(out, file), fullPage: true });
     if (sz === DUMP_SIZE) { fs.mkdirSync(path.join(out, 'styles'), { recursive: true }); fs.writeFileSync(path.join(out, `styles/${name}.json`), JSON.stringify(await p.evaluate(dump), null, 0).replace(/\},\{/g, '},\n{')); }
+    await p.screenshot({ path: path.join(out, file), fullPage: true });
+    scales[sz] = await p.evaluate(() => getComputedStyle(document.documentElement).fontSize);
     index.push({ size: sz, screen: name, file, errors: errs });
     if (errs.length) console.log('page error', sz, name, errs);
     await ctx.close();
@@ -91,7 +94,8 @@ for (const [sz, w, h] of SIZES) {
 // every dial design, step design and theme on the main screen (iPad 11" landscape)
 const extra = async (name, js) => {
   const ctx = await b.newContext({ viewport: { width: 1194, height: 834 }, deviceScaleFactor: 2, hasTouch: true }); const p = await ctx.newPage();
-  await p.goto(url); await p.waitForSelector('.dm'); await p.evaluate(`(${SETUP.kit.toString()})()`); await p.evaluate(js); await p.waitForTimeout(250); await p.evaluate(() => { const t = document.getElementById('toast'); if (t) t.classList.remove('on'); }); await p.waitForTimeout(300);
+  await p.goto(url); await p.waitForSelector('.dm'); await p.evaluate(() => { const v = document.documentElement.style.getPropertyValue('--scale') || '1'; const st = document.createElement('style'); st.textContent = `:root{--scale:${v} !important}`; document.head.appendChild(st); });   // full-page captures resize the page, which would re-run fitScale without touch: keep the device's scale
+  await p.evaluate(`(${SETUP.kit.toString()})()`); await p.evaluate(js); await p.waitForTimeout(250); await p.evaluate(() => { const t = document.getElementById('toast'); if (t) t.classList.remove('on'); }); await p.waitForTimeout(300);
   fs.mkdirSync(path.join(out, 'variants'), { recursive: true }); await p.screenshot({ path: path.join(out, `variants/${name}.png`) });
   index.push({ size: 'ipad11-landscape', screen: name, file: `variants/${name}.png` }); await ctx.close();
 };
@@ -100,6 +104,6 @@ const lists = await (async () => { const ctx = await b.newContext(); const p = a
 for (const d of lists.dials) await extra(`dial-${d}`, `dialSet('${d}');`);
 for (const s of lists.steps) await extra(`steps-${s}`, `PREFS.steps = '${s}'; stepStyleApply(); renderDrums();`);
 for (const t of lists.themes) await extra(`theme-${t}`, `PREFS.theme = { id: '${t}' }; applyTheme(); renderDrums();`);
-fs.writeFileSync(path.join(out, 'index.json'), JSON.stringify({ app: 'Vektur Drum 0.9.1 web', sizes: SIZES, ...lists, shots: index }, null, 1));
+fs.writeFileSync(path.join(out, 'index.json'), JSON.stringify({ app: 'Vektur Drum 0.9.1 web', sizes: SIZES, rootFontSize: scales, ...lists, shots: index }, null, 1));
 console.log(`${index.length} screenshots → ${out}`);
 await b.close();

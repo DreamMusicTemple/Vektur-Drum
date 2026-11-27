@@ -27,6 +27,13 @@
    852
   ]
  ],
+ "rootFontSize": {
+  "ipad13-landscape": "16.757px",
+  "ipad11-landscape": "14.638px",
+  "ipad11-portrait": "13px",
+  "iphone-landscape": "13px",
+  "iphone-portrait": "13px"
+ },
  "dials": [
   "classic",
   "machined",
@@ -767,5 +774,5 @@
    "file": "variants/theme-temple.webp"
   }
  ],
- "notes": "Touch emulated (the web app scales the panel to the screen on touch devices: --scale = clamp(width/1060, 1, 1.35) at width >= 700). Screenshots at 2x device pixels; ipad11-landscape/ lossless, others WebP q94. styles/*.json: every visible element at iPad 11-inch landscape (CSS px = iOS points). Captured on Linux Chrome: text renders in a fallback face (Inter) - see the handover for the iOS font mapping."
+ "notes": "Touch emulated; the web app scales its panel on touch screens >= 700 pt wide: root font = 13 px x clamp(width/1060, 1, 1.35) (see rootFontSize per size; it is frozen during capture so full-page shots keep it). Screenshots at 2x device pixels; ipad11-landscape/ lossless, others WebP q94. styles/*.json: every visible element at iPad 11-inch landscape, measured before the screenshot (CSS px = iOS points). Captured on Linux Chrome: text renders in a fallback face (Inter); fonts: see docs/HANDOVER-native.md 9.3."
 }
