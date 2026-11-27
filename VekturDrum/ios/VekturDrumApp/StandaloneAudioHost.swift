@@ -25,6 +25,8 @@ final class StandaloneAudioHost: ObservableObject, StandaloneAudioHosting {
     }
 
     deinit {
+        audioEngine.stop()
+        if let sourceNode { audioEngine.detach(sourceNode) }
         garbageTimer?.invalidate()
         busSlots.deinitialize(count: 2)
         busSlots.deallocate()
