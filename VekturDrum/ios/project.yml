@@ -30,6 +30,8 @@ targets:
         product: VekturDrumCore
       - package: VekturDrumKit
         product: VekturDrumAudio
+      - package: VekturDrumKit
+        product: VekturDrumDSP
       - target: Vektur Drum AU
         embed: true
   Vektur Drum AU:
