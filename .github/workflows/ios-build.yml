@@ -42,6 +42,20 @@ jobs:
         working-directory: VekturDrum/ios
         run: xcodebuild -list -project VekturDrum.xcodeproj
 
+      - name: Diagnose generated AU extension build settings
+        working-directory: VekturDrum/ios
+        run: |
+          echo "=== AU extension target build settings ==="
+          xcodebuild -showBuildSettings \
+            -project VekturDrum.xcodeproj \
+            -target "Vektur Drum AU" \
+            -configuration Release \
+            -sdk iphoneos | grep -E '(^| )((INFOPLIST_FILE|GENERATE_INFOPLIST_FILE|PRODUCT_TYPE|PRODUCT_BUNDLE_IDENTIFIER|FULL_PRODUCT_NAME|TARGET_BUILD_DIR|CONTENTS_FOLDER_PATH|INFOPLIST_KEY_[^ ]+)) =' || true
+          echo "=== Generated project references to AU Info.plist ==="
+          grep -n -E 'VekturDrumAU/Info.plist|INFOPLIST_FILE|GENERATE_INFOPLIST_FILE|NSExtension' VekturDrum.xcodeproj/project.pbxproj || true
+          echo "=== Source AU extension NSExtension dictionary ==="
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension' VekturDrumAU/Info.plist
+
       - name: Build iOS Simulator app and AUv3 extension
         working-directory: VekturDrum/ios
         run: |
