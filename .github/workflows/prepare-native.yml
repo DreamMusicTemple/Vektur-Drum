@@ -40,24 +40,24 @@ jobs:
 
           p = Path("VekturDrum/native/Sources/VekturDrumCore/Persistence.swift")
           s = p.read_text()
-          import re
-          match = re.search(r"(?m)^\\s*public struct DecodedSample\\b", s)
-          if not match:
-              raise SystemExit("A2: anchored DecodedSample declaration not found")
-          start = match.start()
-          end = s.find("\n}", start)
-          if end < 0:
-              raise SystemExit("A2: could not locate DecodedSample closing brace")
-          block = s[start:end]
+          lines = s.splitlines(keepends=True)
+          start = next((i for i, line in enumerate(lines)
+                        if line.lstrip().startswith("public struct DecodedSample")), None)
+          if start is None:
+              raise SystemExit("A2: DecodedSample declaration not found")
+          end = next((i for i in range(start + 1, len(lines))
+                      if lines[i].strip() == "}"), None)
+          if end is None:
+              raise SystemExit("A2: DecodedSample closing brace not found")
+          block = "".join(lines[start:end])
           if "public init(channels:" not in block:
-              init = """
+              lines.insert(end, """
               public init(channels: [[Float]], sampleRate: Double) {
                   self.channels = channels
                   self.sampleRate = sampleRate
               }
-          """
-              s = s[:end] + init + s[end:]
-              p.write_text(s)
+          """)
+              p.write_text("".join(lines))
           PY
 
       - name: Add ignore rules
