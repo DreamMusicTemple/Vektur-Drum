@@ -5,7 +5,6 @@ name: Native build
 on:
   push:
     branches: ["**"]
-  pull_request:
   workflow_dispatch:
 
 defaults:
@@ -38,6 +37,28 @@ jobs:
         with:
           name: swift-logs
           path: "*.log"
+
+  app:
+    name: App + AUv3 (iOS Simulator, unsigned)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: XcodeGen
+        run: brew install xcodegen
+      - name: Generate the Xcode project
+        working-directory: app
+        env: { BUNDLE_ID: com.dreammusictemple.vekturdrum, APPLE_TEAM_ID: "", BUILD_NUMBER: "1" }
+        run: xcodegen
+      - name: Build
+        run: |
+          xcodebuild -project app/VekturDrum.xcodeproj -scheme VekturDrum -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build 2>&1 | tee app-build.log \
+            | grep -E "error:|warning: .*(Vektur|Shared)|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" app-build.log
+      - name: Keep the log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: app-build-log, path: app-build.log }
 
   dsp:
     name: C++ engine suite
