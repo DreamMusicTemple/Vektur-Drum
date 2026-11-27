@@ -1,4 +1,4 @@
-name: Build Vektur Drum native Swift package
+name: Build Vektur Drum native Swift package (automatic)
 
 on:
   push:
