@@ -5,17 +5,32 @@ import Foundation
 import VekturDrumCore
 import VekturDrumDSP
 
+/// vd_engine_send is a single-producer queue. The UI (main thread) and AUStateKeeper (whatever thread the host restores
+/// state on) both send to the same engine, so every send goes through this one lock. Never used on the audio thread.
+public enum EngineCommandGate {
+    private static let lock = NSLock()
+    @discardableResult public static func send(_ engine: OpaquePointer, _ c: inout vd_command) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return vd_engine_send(engine, &c)
+    }
+}
+
 @MainActor
 public final class DrumEngine: DrumEngineControl {
     /// The C engine. Hand this (not `self`) to the render block: it is what vd_engine_render needs, and capturing it
     /// keeps Swift objects, reference counting and the main actor out of the audio thread.
     public nonisolated let rawEngine: OpaquePointer
+    private nonisolated let ownsEngine: Bool
 
+    /// A new engine of its own (offline work, tests).
     public init?(sampleRate: Double, maxFrames: UInt32) {
         guard let e = vd_engine_create(sampleRate, maxFrames) else { return nil }
-        rawEngine = e
+        rawEngine = e; ownsEngine = true
     }
-    deinit { vd_engine_destroy(rawEngine) }
+    /// The controls for an engine someone else owns — the app and the plug-in UI drive `VekturDrumAudioUnit.engine` this
+    /// way. The owner (the audio unit) must outlive this object; it is not destroyed here.
+    public init(borrowing engine: OpaquePointer) { rawEngine = engine; ownsEngine = false }
+    deinit { if ownsEngine { vd_engine_destroy(rawEngine) } }
 
     /// Audio stopped (route or sample-rate change): rebuilds the DSP buffers, keeps the music.
     @discardableResult public func prepare(sampleRate: Double, maxFrames: UInt32) -> Bool {
@@ -39,7 +54,7 @@ public final class DrumEngine: DrumEngineControl {
             v.crush = st.crush; v.delay_send = st.delaySend; v.reverb_send = st.reverbSend; v.chance = st.chance; v.fm_ratio = st.fmRatio
             v.ring_on = st.ringOn ? 1 : 0; v.ring_master = st.ringMaster; v.ring_slaves = st.ringSlaves; v.ring_amount = st.ringAmount; v.ring_hz = st.ringHz; v.fold = st.fold
             c.u.step = v
-            guard vd_engine_send(rawEngine, &c) else { return false }
+            guard EngineCommandGate.send(rawEngine, &c) else { return false }
             // NEW (0.8): the step's pitch shift and spectral settings follow in their own command (a command stays ≤ 64 bytes)
             type(VD_CMD_SET_STEP_FX)
             c.u.step_fx = EngineSamples.stepFx(st)
@@ -72,7 +87,7 @@ public final class DrumEngine: DrumEngineControl {
         case let .setLfoPoints(lfo, start, pts):
             type(VD_CMD_SET_LFO_POINTS); Self.fillLfo(&c, lfo: lfo, start: start, pts)
         }
-        return vd_engine_send(rawEngine, &c)
+        return EngineCommandGate.send(rawEngine, &c)
     }
 
     // ---- samples (decoded off the audio thread; the engine takes ownership)
@@ -150,7 +165,7 @@ public final class DrumEngine: DrumEngineControl {
             for h in 0..<2 {
                 var c = vd_command(); c.type = UInt16(VD_CMD_SET_LFO_POINTS.rawValue)
                 fillLfo(&c, lfo: l, start: h * 8, row[(h * 8)..<(h * 8 + 8)].map { Float($0) })
-                _ = vd_engine_send(engine, &c)
+                EngineCommandGate.send(engine, &c)
             }
         }
     }

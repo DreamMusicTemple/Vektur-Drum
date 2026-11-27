@@ -31,15 +31,31 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
     private var _outputBusses: AUAudioUnitBusArray!
     private var _inputBusses: AUAudioUnitBusArray!
     private var _parameterTree: AUParameterTree?
-    // render-thread scratch, allocated in allocateRenderResources
-    private var midiScratch: UnsafeMutablePointer<vd_midi_event>?
-    private var busScratch: UnsafeMutablePointer<UnsafeMutablePointer<Float>?>?   // [L, R] bus pointer slots for vd_engine_render
-    private var inputScratch: AVAudioPCMBuffer?
-    private var outputScratch: AVAudioPCMBuffer?
+    // Render-thread scratch. Allocated ONCE in init and freed only in deinit: hosts may fetch (and cache) the render block
+    // before or across allocate / deallocate cycles, so its captured pointers must stay valid for the unit's lifetime.
+    private let midiScratch: UnsafeMutablePointer<vd_midi_event>
+    private let busScratch: UnsafeMutablePointer<UnsafeMutablePointer<Float>?>   // [L, R] bus pointer slots for vd_engine_render
+    private let outScratchL: UnsafeMutablePointer<Float>, outScratchR: UnsafeMutablePointer<Float>
+    private let inScratchL: UnsafeMutablePointer<Float>, inScratchR: UnsafeMutablePointer<Float>
+    private let inputList: UnsafeMutableAudioBufferListPointer   // 2 non-interleaved buffers for the effect's pull-input
+    private let inputChannels: UnsafeMutablePointer<UInt32>      // the input bus's channel count (1 or 2), set in allocate
     private static let midiCapacity = 512
+    /// The most frames one render call may ask for (scratch capacity). Larger requests are refused, never overrun.
+    public static let maxFramesCapacity: AUAudioFrameCount = 8192
 
     public override init(componentDescription: AudioComponentDescription, options: AudioComponentInstantiationOptions = []) throws {
         isEffect = componentDescription.componentType != kAudioUnitType_MusicDevice
+        let cap = Int(Self.maxFramesCapacity)
+        midiScratch = .allocate(capacity: Self.midiCapacity)
+        busScratch = .allocate(capacity: 2); busScratch.initialize(repeating: nil, count: 2)
+        outScratchL = .allocate(capacity: cap); outScratchL.initialize(repeating: 0, count: cap)
+        outScratchR = .allocate(capacity: cap); outScratchR.initialize(repeating: 0, count: cap)
+        inScratchL = .allocate(capacity: cap); inScratchL.initialize(repeating: 0, count: cap)
+        inScratchR = .allocate(capacity: cap); inScratchR.initialize(repeating: 0, count: cap)
+        inputChannels = .allocate(capacity: 1); inputChannels.initialize(to: 2)
+        inputList = AudioBufferList.allocate(maximumBuffers: 2)
+        inputList[0] = AudioBuffer(mNumberChannels: 1, mDataByteSize: UInt32(cap * 4), mData: UnsafeMutableRawPointer(inScratchL))
+        inputList[1] = AudioBuffer(mNumberChannels: 1, mDataByteSize: UInt32(cap * 4), mData: UnsafeMutableRawPointer(inScratchR))
         try super.init(componentDescription: componentDescription, options: options)
         let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
         outputBus = try AUAudioUnitBus(format: format); outputBus.maximumChannelCount = 2
@@ -53,9 +69,14 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         maximumFramesToRender = 4096
         // The effect starts as a pure effect (DRUMS OFF) with the input at unity; the instrument ignores these.
         if isEffect { vd_engine_set_param(e, ParameterID.master(.inputDrums).address, 0); vd_engine_set_param(e, ParameterID.master(.inputLevel).address, 1) }
-        var c = vd_command(); c.type = UInt16(VD_CMD_ENABLE.rawValue); c.u.value = 1; _ = vd_engine_send(e, &c)
+        var c = vd_command(); c.type = UInt16(VD_CMD_ENABLE.rawValue); c.u.value = 1; EngineCommandGate.send(e, &c)
     }
-    deinit { if let e = engine { vd_engine_destroy(e) }; midiScratch?.deallocate(); busScratch?.deallocate() }
+    deinit {
+        if let e = engine { vd_engine_destroy(e) }
+        midiScratch.deallocate(); busScratch.deallocate()
+        outScratchL.deallocate(); outScratchR.deallocate(); inScratchL.deallocate(); inScratchR.deallocate()
+        free(inputList.unsafeMutablePointer); inputChannels.deallocate()
+    }
 
     // ---------------------------------------------------------------- buses, parameters
     public override var outputBusses: AUAudioUnitBusArray { _outputBusses }
@@ -112,24 +133,21 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
     public override func allocateRenderResources() throws {
         try super.allocateRenderResources()
         guard let e = engine else { return }
+        if maximumFramesToRender > Self.maxFramesCapacity { maximumFramesToRender = Self.maxFramesCapacity }
         let sr = outputBus.format.sampleRate, maxF = maximumFramesToRender
         if isEffect, let ib = inputBus, ib.format.sampleRate != sr { throw NSError(domain: NSOSStatusErrorDomain, code: Int(kAudioUnitErr_FormatNotSupported)) }
+        inputChannels.pointee = min(2, max(1, inputBus?.format.channelCount ?? 2))
         guard vd_engine_prepare(e, sr, maxF) else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(kAudioUnitErr_FailedInitialization)) }
-        let fmt = AVAudioFormat(standardFormatWithSampleRate: sr, channels: 2)!
-        inputScratch = isEffect ? AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: maxF) : nil
-        outputScratch = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: maxF)
-        midiScratch?.deallocate(); midiScratch = .allocate(capacity: Self.midiCapacity)
-        if busScratch == nil { busScratch = .allocate(capacity: 2); busScratch!.initialize(repeating: nil, count: 2) }
     }
-    public override func deallocateRenderResources() { super.deallocateRenderResources(); inputScratch = nil; outputScratch = nil }
 
     public override var internalRenderBlock: AUInternalRenderBlock {
         // Everything the block needs, captured as plain values / pointers (never `self`).
-        let e = engine!, effect = isEffect, midiCap = Self.midiCapacity
-        let midi = midiScratch!, bus = busScratch!, inBuf = inputScratch, outBuf = outputScratch!
-        let inList = inBuf?.mutableAudioBufferList, outL = outBuf.floatChannelData![0], outR = outBuf.floatChannelData![1]
+        let e = engine!, effect = isEffect, midiCap = Self.midiCapacity, cap = Self.maxFramesCapacity
+        let midi = midiScratch, bus = busScratch, outL = outScratchL, outR = outScratchR
+        let inList = inputList, inL = inScratchL, inR = inScratchR, inCh = inputChannels
         let musical = musicalContextBlock, transport = transportStateBlock
         return { actionFlags, timestamp, frameCount, outputBusNumber, outputData, realtimeEventListHead, pullInputBlock in
+            if frameCount > cap { return kAudioUnitErr_TooManyFramesToProcess }
             var ctx = vd_render_context()
             ctx.tempo = 120
             var tempo = 0.0, beat = 0.0
@@ -157,14 +175,16 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
             if n > 1 { for i in 1..<n { var j = i; let x = midi[i]; while j > 0 && midi[j - 1].sample_offset > x.sample_offset { midi[j] = midi[j - 1]; j -= 1 }; midi[j] = x } }
             ctx.midi = UnsafePointer(midi); ctx.midi_count = UInt32(n)
             // the insert input
-            if effect, let pull = pullInputBlock, let inList {
-                inList.pointee.mBuffers.mDataByteSize = frameCount * 4
-                let abl = UnsafeMutableAudioBufferListPointer(inList)
-                for i in 0..<abl.count { abl[i].mDataByteSize = frameCount * 4 }
+            if effect, let pull = pullInputBlock {
+                // point at our scratch every call: an upstream unit may have swapped in its own buffers last time
+                inList.unsafeMutablePointer.pointee.mNumberBuffers = 2   // (the subscript checks the count: fill both first)
+                inList[0].mData = UnsafeMutableRawPointer(inL); inList[1].mData = UnsafeMutableRawPointer(inR)
+                inList[0].mDataByteSize = frameCount * 4; inList[1].mDataByteSize = frameCount * 4
+                inList.unsafeMutablePointer.pointee.mNumberBuffers = inCh.pointee   // 1 for a mono bus
                 var pf = AudioUnitRenderActionFlags()
-                if pull(&pf, timestamp, frameCount, 0, inList) == noErr {
-                    ctx.input_left = UnsafePointer(abl[0].mData!.assumingMemoryBound(to: Float.self))
-                    ctx.input_right = abl.count > 1 ? UnsafePointer(abl[1].mData!.assumingMemoryBound(to: Float.self)) : nil
+                if pull(&pf, timestamp, frameCount, 0, inList.unsafeMutablePointer) == noErr, let l = inList[0].mData {
+                    ctx.input_left = UnsafePointer(l.assumingMemoryBound(to: Float.self))
+                    ctx.input_right = inList.count > 1 ? inList[1].mData.map { UnsafePointer($0.assumingMemoryBound(to: Float.self)) } : nil
                 }
             }
             // output: the host's buffers, or ours when the host passes none (in-place convention)

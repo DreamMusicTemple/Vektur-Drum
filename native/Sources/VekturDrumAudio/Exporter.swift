@@ -80,7 +80,7 @@ public enum Exporter {
         defer { vd_engine_destroy(e) }
         let keeper = AUStateKeeper(engine: e, library: library)
         await keeper.loadForOffline(p)
-        var c = vd_command(); c.type = UInt16(VD_CMD_ENABLE.rawValue); c.u.value = 1; _ = vd_engine_send(e, &c)
+        var c = vd_command(); c.type = UInt16(VD_CMD_ENABLE.rawValue); c.u.value = 1; EngineCommandGate.send(e, &c)
         let body = vd_engine_offline_length(e, p.tempo), cap = body + UInt64(Double(tailMaxSeconds) * Double(o.sampleRate))
         var L = [Float](repeating: 0, count: Int(cap)), R = L
         var cfg = vd_offline_config(); cfg.tempo = p.tempo; cfg.solo_track = Int32(solo); cfg.ring_out = o.ringOut ? 1 : 0; cfg.tail_max_seconds = tailMaxSeconds
