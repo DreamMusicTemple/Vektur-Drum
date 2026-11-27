@@ -53,8 +53,21 @@ jobs:
             -sdk iphoneos | grep -E '(^| )((INFOPLIST_FILE|GENERATE_INFOPLIST_FILE|PRODUCT_TYPE|PRODUCT_BUNDLE_IDENTIFIER|FULL_PRODUCT_NAME|TARGET_BUILD_DIR|CONTENTS_FOLDER_PATH|INFOPLIST_KEY_[^ ]+)) =' || true
           echo "=== Generated project references to AU Info.plist ==="
           grep -n -E 'VekturDrumAU/Info.plist|INFOPLIST_FILE|GENERATE_INFOPLIST_FILE|NSExtension' VekturDrum.xcodeproj/project.pbxproj || true
-          echo "=== Source AU extension NSExtension dictionary ==="
-          /usr/libexec/PlistBuddy -c 'Print :NSExtension' VekturDrumAU/Info.plist
+          echo "=== Runner working directory and checkout ==="
+          pwd
+          git rev-parse HEAD
+          echo "=== AU plist file metadata and checksum ==="
+          ls -l VekturDrumAU/Info.plist
+          shasum -a 256 VekturDrumAU/Info.plist
+          echo "=== AU plist source from checked-out working tree ==="
+          sed -n '1,180p' VekturDrumAU/Info.plist
+          echo "=== AU plist source directly from checked-out Git object ==="
+          git show HEAD:VekturDrum/ios/VekturDrumAU/Info.plist | sed -n '1,180p'
+          echo "=== Parsed AU plist dictionary ==="
+          plutil -p VekturDrumAU/Info.plist || true
+          echo "=== Parsed NSExtension key ==="
+          /usr/libexec/PlistBuddy -c 'Print :NSExtension' VekturDrumAU/Info.plist || true
+          plutil -extract NSExtension xml1 -o - VekturDrumAU/Info.plist || true
 
       - name: Build iOS Simulator app and AUv3 extension
         working-directory: VekturDrum/ios
