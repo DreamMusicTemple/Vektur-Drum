@@ -41,11 +41,11 @@ jobs:
           p = Path("VekturDrum/native/Sources/VekturDrumCore/Persistence.swift")
           s = p.read_text()
           import re
-          match = re.search(r"(?m)^public struct DecodedSample\\b", s)
+          match = re.search(r"(?m)^\\s*public struct DecodedSample\\b", s)
           if not match:
               raise SystemExit("A2: anchored DecodedSample declaration not found")
           start = match.start()
-          end = s.find("\\n}", start)
+          end = s.find("\n}", start)
           if end < 0:
               raise SystemExit("A2: could not locate DecodedSample closing brace")
           block = s[start:end]
