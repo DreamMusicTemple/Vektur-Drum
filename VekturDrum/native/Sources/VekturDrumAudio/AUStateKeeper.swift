@@ -84,8 +84,10 @@ public final class AUStateKeeper: @unchecked Sendable {
         _ = drainRecorded()                 // steps recorded into the old song belong to it
         project = r.project; cache = nil
         apply(project, stopTransport: reason == .song)
+        sampleLoadGeneration &+= 1
+        let generation = sampleLoadGeneration
         lock.unlock()
-        loadSamples(for: r.project)
+        loadSamples(for: r.project, generation: generation)
         let notice = Notice(result: r, reason: reason)
         DispatchQueue.main.async { [weak self] in self?.onRestored?(notice) }
     }
@@ -100,8 +102,11 @@ public final class AUStateKeeper: @unchecked Sendable {
         if TrackLimits.playable.contains(kit.trackCount) { project.trackCount = kit.trackCount }
         cache = nil
         apply(project, stopTransport: false)
+        sampleLoadGeneration &+= 1
+        let generation = sampleLoadGeneration
+        let restoredProject = project
         lock.unlock()
-        loadSamples(for: project)
+        loadSamples(for: restoredProject, generation: generation)
     }
 
     // ---------------------------------------------------------------- internals (lock held)
@@ -214,12 +219,8 @@ public final class AUStateKeeper: @unchecked Sendable {
     }
     /// Samples decode off the audio thread, then reach the engine by pointer hand-off; a track whose sample is
     /// missing plays nothing (Sample engine) and the restore notice names it.
-    private func loadSamples(for p: DrumProject) {
+    private func loadSamples(for p: DrumProject, generation: UInt64) {
         guard let library else { return }
-        lock.lock()
-        sampleLoadGeneration &+= 1
-        let generation = sampleLoadGeneration
-        lock.unlock()
         let engine = self.engine
         for t in 0..<TrackLimits.playable.upperBound {
             let ref = p.tracks[t].sample, sx = p.tracks[t].slices, values = p.tracks[t].values, tempo = p.tempo
