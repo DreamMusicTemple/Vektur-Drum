@@ -9,7 +9,7 @@ final class SlicerModStateTests: XCTestCase {
         XCTAssertEqual(ParameterID.master(.slicerHold).address, 91)     // VD_MP_SLICER_HOLD
         XCTAssertEqual(ParameterID.master(.envInput).address, 96)       // VD_MP_ENV_INPUT
         XCTAssertEqual(ParameterID.master(.chaosRate).address, 105)     // VD_MP_CHAOS_RATE
-        for spec in ParameterSpec.master where spec.index >= 80 { XCTAssertNotNil(MasterParameter(rawValue: spec.index), spec.key) }
+        for spec in ParameterSpec.master where spec.index >= 80 && spec.index < 1024 {   // tracks 10–12 (0.9) sit in this table at track addresses XCTAssertNotNil(MasterParameter(rawValue: spec.index), spec.key) }
         XCTAssertEqual(ParameterID(key: "sl.density")?.address, 84)
         XCTAssertEqual(ParameterID(key: "t3.decay")?.address, 1024 + 2 * 256 + 2)
         XCTAssertEqual(ParameterID(key: "t12.decay")?.address, 1024 + 11 * 256 + 2)   // 0.9: 12 tracks
@@ -73,7 +73,8 @@ final class SlicerModStateTests: XCTestCase {
     func testFactoryKitsLoad() {
         let kits = FactoryKits.load()
         XCTAssertEqual(kits.count, 89)   // 88 + INIT
-        for style in ["IDM", "Techno", "Lo-Fi & Downtempo", "80s Electro", "Breakbeat", "Ambient"] { XCTAssertEqual(kits.filter { $0.category == style }.count, 10, style) }
+        for style in ["IDM", "Lo-Fi & Downtempo", "80s Electro", "Breakbeat", "Ambient"] { XCTAssertEqual(kits.filter { $0.category == style }.count, 10, style) }
+        XCTAssertEqual(kits.filter { $0.category == "Techno" }.count, 11)   // + Steel Frame Groove (0.9 FM demo)
         let ini = FactoryKits.initKit(in: kits); XCTAssertNotNil(ini); XCTAssertTrue(ini?.patterns.allSatisfy(\.isEmpty) ?? false); XCTAssertTrue(ini?.master.isEmpty ?? false)
         XCTAssertTrue(kits.filter { $0.category == "Ambient" }.allSatisfy { ($0.tempo ?? 120) < 90 && $0.master["dr.revtype"] == 3 })
         XCTAssertEqual(kits.filter { $0.category == "Hard Trance" || $0.category == "Psytrance" }.count, 10)

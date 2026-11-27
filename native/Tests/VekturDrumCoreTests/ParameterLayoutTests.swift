@@ -11,7 +11,7 @@ final class ParameterLayoutTests: XCTestCase {
     }
 
     func testGeneratedTableMatchesTheEnums() {
-        XCTAssertEqual(ParameterSpec.track.count, 44)   // 0.9: + Metalise, Resample, transient mode / sens, slice, tune mode, stretch, sampler model
+        XCTAssertEqual(ParameterSpec.track.count, 45)   // 0.9.1: + LONG · 0.9: + Metalise, Resample, transient mode / sens, slice, tune mode, stretch, sampler model
         for spec in ParameterSpec.track { XCTAssertNotNil(TrackParameter(rawValue: spec.index), "\(spec.key) has a TrackParameter case") }
         for spec in ParameterSpec.master where spec.index < 32 { XCTAssertNotNil(MasterParameter(rawValue: spec.index), spec.key) }
         XCTAssertEqual(ParameterSpec.trackDefaults.count, 12)
@@ -19,6 +19,7 @@ final class ParameterLayoutTests: XCTestCase {
         XCTAssertEqual(ParameterID.track(0, .metalise).address, 1024 + 48)   // VD_TP_METALISE
         XCTAssertEqual(ParameterID.track(11, .samplerModel).address, 1024 + 11 * 256 + 55)
         XCTAssertEqual(ParameterID.master(.metaliseCharacter).address, 37)
+        XCTAssertEqual(ParameterID.track(0, .long).address, 1024 + 56)   // VD_TP_LONG
     }
 
     func testNormalisationRoundTrips() {
