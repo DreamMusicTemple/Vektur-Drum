@@ -12,6 +12,7 @@ targets:
     platform: iOS
     sources:
       - path: VekturDrumApp
+      - path: Shared
     preBuildScripts:
       - name: Generate App Store Icon
         script: |
@@ -67,6 +68,7 @@ targets:
     platform: iOS
     sources:
       - path: VekturDrumAU
+      - path: Shared
     info:
       path: VekturDrumAU/Info.plist
     settings:
@@ -82,5 +84,7 @@ targets:
         MARKETING_VERSION: 0.9.1
         CURRENT_PROJECT_VERSION: 1
     dependencies:
+      - package: VekturDrumKit
+        product: VekturDrumCore
       - package: VekturDrumKit
         product: VekturDrumAudio
