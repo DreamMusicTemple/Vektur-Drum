@@ -73,7 +73,7 @@ final class SlicerModStateTests: XCTestCase {
     func testFactoryKitsLoad() {
         let kits = FactoryKits.load()
         XCTAssertEqual(kits.count, 89)   // 88 + INIT
-        for style in ["IDM", "Techno", "Lo-Fi & Downtempo", "80s Electro", "Breakbeat", "Ambient"] { XCTAssertEqual(kits.filter { $0.category == style }.count, 10, style) }
+        for style in ["IDM", "Techno", "Lo-Fi & Downtempo", "80s Electro", "Breakbeat", "Ambient"] {\n            let expected = style == "Techno" ? 11 : 10 // includes the original Warehouse Techno kit plus 10 generated genre kits\n            XCTAssertEqual(kits.filter { $0.category == style }.count, expected, style)\n        }
         let ini = FactoryKits.initKit(in: kits); XCTAssertNotNil(ini); XCTAssertTrue(ini?.patterns.allSatisfy(\.isEmpty) ?? false); XCTAssertTrue(ini?.master.isEmpty ?? false)
         XCTAssertTrue(kits.filter { $0.category == "Ambient" }.allSatisfy { ($0.tempo ?? 120) < 90 && $0.master["dr.revtype"] == 3 })
         XCTAssertEqual(kits.filter { $0.category == "Hard Trance" || $0.category == "Psytrance" }.count, 10)
