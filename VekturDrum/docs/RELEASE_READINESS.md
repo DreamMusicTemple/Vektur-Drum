@@ -16,12 +16,12 @@ CI build verification is not a device test, a signed archive, or an App Store Co
 ## Still required before a TestFlight candidate
 
 ### App functionality
-- Implement the standalone AVAudioEngine host and connect Play/Stop, tempo, pattern and step editing to the DSP engine. The current SwiftUI screen is a compile-only shell; its Play button does not start audio.
-- Implement the native sequencer and sound-editing screens using the existing project model and DSP parameters. Do not replace the DSP engine or change parameter addresses/state formats.
+- A first standalone AVAudioEngine host and native 12-track / 16-step sequencer are now connected to the DSP engine. Play/Stop, pattern selection and step toggles issue native engine commands. The render context currently runs at a fixed 120 BPM; add tempo control and verify playback on physical devices.
+- Complete the remaining native sequencer and sound-editing screens using the existing project model and DSP parameters. Do not replace the DSP engine or change parameter addresses/state formats.
 - Implement the App Group-backed `SampleLibrary`, `KitLibrary`, `ProjectStore` and `LibraryLocation` services.
 - Connect the sample library to `VekturDrumAudioUnit`; it currently initializes its state keeper without a sample library.
 - Complete the AUv3 controller UI and factory-preset behavior; the current extension view is only a placeholder label.
-- Implement CoreMIDI input and the remaining standalone lifecycle handling.
+- Implement CoreMIDI input and complete standalone interruption, route-change and media-services-reset handling.
 - Schedule non-real-time engine garbage collection and finish the render-thread audit, including host buffer edge cases and repeated resource allocation.
 - Add a real App Store icon asset, screenshots and final app metadata.
 
