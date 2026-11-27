@@ -47,7 +47,8 @@ public enum TrackParameter: UInt32, CaseIterable, Sendable {
     case engine = 32, chokeGroup, midiNote, sweep, sweepTime
     case eq1Freq = 40, eq1Gain, eq2Freq, eq2Gain, eq3Freq, eq3Gain, eq4Freq, eq4Gain   // NEW (0.7): 4-band EQ
     case metalise = 48, resample, transientMode, transientSensitivity, slice, tuneMode, stretch, samplerModel   // NEW (0.9): vintage sampler, slices
-    case long = 56   // NEW (0.9.1): extended decay toggle\n    case fmAlgorithm = 64, fmFreq, fmRatio, fmRatio2, fmIndex, fmIndexDecay, fmFeedback, fmFold, fmNoise
+    case long = 56   // NEW (0.9.1): extended decay toggle
+    case fmAlgorithm = 64, fmFreq, fmRatio, fmRatio2, fmIndex, fmIndexDecay, fmFeedback, fmFold, fmNoise
 }
 
 /// Master indices (vd_master_param), Vektur Pulse's order.
