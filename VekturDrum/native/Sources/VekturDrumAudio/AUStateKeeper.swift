@@ -29,7 +29,7 @@ public final class AUStateKeeper: @unchecked Sendable {
     /// Total sample bytes embedded in one song; above this the song keeps references only (and says so).
     public static let embedLimit = 32 * 1024 * 1024
 
-    public enum Reason { case song, preset }
+    public enum Reason: Sendable { case song, preset }
     public struct Notice: Sendable { public var result: StateReadResult; public var reason: Reason }
 
     private let lock = NSLock()
@@ -37,6 +37,8 @@ public final class AUStateKeeper: @unchecked Sendable {
     private var cache: (project: DrumProject, data: Data)?
     private let engine: OpaquePointer
     private let library: SampleLibrary?
+    /// Monotonic token prevents a slow decode from an older restore replacing a newer song's samples.
+    private var sampleLoadGeneration: UInt64 = 0
     public var embedSamples = true
     /// Called on the main queue after a restore: refresh the AUParameterTree and the UI, show `missingSamples`.
     public var onRestored: ((Notice) -> Void)?
@@ -214,13 +216,30 @@ public final class AUStateKeeper: @unchecked Sendable {
     /// missing plays nothing (Sample engine) and the restore notice names it.
     private func loadSamples(for p: DrumProject) {
         guard let library else { return }
+        lock.lock()
+        sampleLoadGeneration &+= 1
+        let generation = sampleLoadGeneration
+        lock.unlock()
         let engine = self.engine
         for t in 0..<TrackLimits.playable.upperBound {
             let ref = p.tracks[t].sample, sx = p.tracks[t].slices, values = p.tracks[t].values, tempo = p.tempo
-            Task.detached(priority: .userInitiated) {   // decoding and slice preparation stay off the audio thread
-                guard let ref, let s = try? await library.decoded(ref) else { vd_engine_set_sample(engine, UInt32(t), nil); return }
+            Task.detached(priority: .userInitiated) { [weak self] in
+                // Decode and slice preparation stay off the audio thread. A superseded restore must
+                // never install stale samples after a later project or kit has been selected.
+                guard let ref, let s = try? await library.decoded(ref) else {
+                    guard self?.isCurrentSampleLoad(generation) == true else { return }
+                    vd_engine_set_sample(engine, UInt32(t), nil)
+                    return
+                }
+                guard self?.isCurrentSampleLoad(generation) == true else { return }
                 vd_engine_set_sample(engine, UInt32(t), EngineSamples.make(s, slices: sx, values: values, tempo: tempo))
             }
         }
+    }
+
+    private func isCurrentSampleLoad(_ generation: UInt64) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return sampleLoadGeneration == generation
     }
 }
