@@ -8,3 +8,8 @@ xcuserdata/
 DerivedData/
 node_modules/
 xcuserdata/
+.build/
+*.xcarchive
+DerivedData/
+node_modules/
+xcuserdata/
