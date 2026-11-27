@@ -136,27 +136,7 @@ public final class DrumEngine: DrumEngineControl {
 
     // ---- full resync from the model (after loading, a reset or a sample-rate change)
     public func sync(from project: DrumProject) {
-        send(.panic)
-        for t in 0..<ParameterSpec.trackDefaults.count {
-            for spec in ParameterSpec.track {
-                let v = project.tracks[t].values[spec.key] ?? ParameterSpec.trackDefaults[t][spec.key] ?? spec.defaultValue
-                vd_engine_set_param(rawEngine, ParameterID.trackBase + UInt32(t) * ParameterID.trackStride + spec.index, Float(v))
-            }
-        }
-        for spec in ParameterSpec.master { vd_engine_set_param(rawEngine, spec.index, Float(project.master[spec.key] ?? spec.defaultValue)) }
-        for (p, pattern) in project.patterns.prefix(TrackLimits.patterns).enumerated() {
-            send(.setBars(pattern: p, pattern.bars)); send(.setPatternSlicer(pattern: p, pattern.slicer))
-            for (t, tr) in pattern.tracks.prefix(ParameterSpec.trackDefaults.count).enumerated() {
-                send(.setTrackLayout(pattern: p, track: t, length: tr.length, division: tr.division))
-                for (s, step) in tr.steps.prefix(TrackLimits.steps).enumerated() { send(.setStep(pattern: p, track: t, step: s, step)) }
-            }
-        }
-        for i in 0..<DrumLists.slicerSlots { send(.setSlice(slot: i, i < project.slicer.count ? project.slicer[i] : SlicerSlot(action: .thru, source: i))) }   // NEW
-        for i in 0..<DrumLists.modWires { send(.setWire(slot: i, i < project.wires.count ? project.wires[i] : nil)) }
-        Self.sendLfoShapes(project.lfoShapes, to: rawEngine)   // NEW (0.9.1)
-        send(.setChain(project.chain, enabled: project.chainEnabled))
-        send(.selectPattern(project.selectedPattern))
-        send(.setTrackCount(project.trackCount))
+        AUStateKeeper.applyProject(project, to: rawEngine, stopTransport: true)
     }
 
     // ---- NEW (0.9.1): LFO DRAW — 16 points go as two 8-point commands per LFO
