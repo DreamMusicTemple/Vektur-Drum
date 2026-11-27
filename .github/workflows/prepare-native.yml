@@ -24,7 +24,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f VekturDrum-0.9.1.zip
-          unzip -q VekturDrum-0.9.1.zip
+          unzip -oq VekturDrum-0.9.1.zip
           test -f VekturDrum/native/Package.swift
           python3 - <<'PY'
           from pathlib import Path
