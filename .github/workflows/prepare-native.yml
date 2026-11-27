@@ -59,6 +59,151 @@ jobs:
           """)
               p.write_text("".join(lines))
           PY
+          # Re-apply reviewed runtime-safety fixes after extracting the original archive.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # AU render scratch pointers must remain valid for any retained render block.
+          p = Path("VekturDrum/native/Sources/VekturDrumAudio/VekturDrumAudioUnit.swift")
+          s = p.read_text()
+          replacements = [
+              ("""    // render-thread scratch, allocated in allocateRenderResources
+              private var midiScratch: UnsafeMutablePointer<vd_midi_event>?
+              private var busScratch: UnsafeMutablePointer<UnsafeMutablePointer<Float>?>?   // [L, R] bus pointer slots for vd_engine_render
+              private var inputScratch: AVAudioPCMBuffer?
+              private var outputScratch: AVAudioPCMBuffer?
+              private static let midiCapacity = 512""",
+               """    // Pointer scratch is allocated once for the unit's lifetime. A render block may outlive a
+              // resource reallocation, so these addresses must never be freed/replaced while a block can use them.
+              private static let midiCapacity = 512
+              private let midiScratch = UnsafeMutablePointer<vd_midi_event>.allocate(capacity: midiCapacity)
+              private let busScratch = UnsafeMutablePointer<UnsafeMutablePointer<Float>?>.allocate(capacity: 2)
+              private var inputScratch: AVAudioPCMBuffer?
+              private var outputScratch: AVAudioPCMBuffer?"""),
+              ("""        try super.init(componentDescription: componentDescription, options: options)
+              let format""",
+               """        try super.init(componentDescription: componentDescription, options: options)
+              busScratch.initialize(repeating: nil, count: 2)
+              let format"""),
+              ("""        engine = e
+              keeper = AUStateKeeper(engine: e, library: nil)""",
+               """        engine = e
+              keeper = AUStateKeeper(engine: e, library: nil)"""),
+              ("""    deinit { if let e = engine { vd_engine_destroy(e) }; midiScratch?.deallocate(); busScratch?.deallocate() }""",
+               """    deinit {
+                  if let e = engine { vd_engine_destroy(e) }
+                  midiScratch.deallocate()
+                  busScratch.deinitialize(count: 2)
+                  busScratch.deallocate()
+              }"""),
+              ("""        midiScratch?.deallocate(); midiScratch = .allocate(capacity: Self.midiCapacity)
+              if busScratch == nil { busScratch = .allocate(capacity: 2); busScratch!.initialize(repeating: nil, count: 2) }""",
+               """        // midiScratch and busScratch are lifetime allocations; do not replace them here."""),
+              ("""        let e = engine!, effect = isEffect, midiCap = Self.midiCapacity
+              let midi = midiScratch!, bus = busScratch!, inBuf = inputScratch, outBuf = outputScratch!""",
+               """        let e = engine!, effect = isEffect, midiCap = Self.midiCapacity
+              let maxFrames = maximumFramesToRender
+              let midi = midiScratch, bus = busScratch, inBuf = inputScratch, outBuf = outputScratch!"""),
+              ("""        return { actionFlags, timestamp, frameCount, outputBusNumber, outputData, realtimeEventListHead, pullInputBlock in
+                  var ctx = vd_render_context()""",
+               """        return { actionFlags, timestamp, frameCount, outputBusNumber, outputData, realtimeEventListHead, pullInputBlock in
+                  guard frameCount > 0 else { return noErr }
+                  guard frameCount <= maxFrames else { return kAudioUnitErr_TooManyFramesToProcess }
+                  var ctx = vd_render_context()""")
+          ]
+          for old, new in replacements:
+              if old in s:
+                  s = s.replace(old, new, 1)
+              elif new not in s:
+                  raise SystemExit("AU safety patch anchor not found: " + old.splitlines()[0])
+          p.write_text(s)
+
+          # Serialize all Swift-side producers into the engine's single-producer command queue.
+          p = Path("VekturDrum/native/Sources/VekturDrumAudio/DrumEngine.swift")
+          s = p.read_text()
+          old = """public final class DrumEngine: DrumEngineControl {
+              /// The C engine."""
+          new = """public final class DrumEngine: DrumEngineControl {
+              // vd_engine_send is a single-producer queue. This lock is never acquired by the render thread.
+              private static let commandQueueLock = NSLock()
+              private static func enqueue(_ engine: OpaquePointer, _ command: inout vd_command) -> Bool {
+                  commandQueueLock.lock()
+                  defer { commandQueueLock.unlock() }
+                  return vd_engine_send(engine, &_command)
+              }
+
+              /// The C engine."""
+          if old in s:
+              new = new.replace("&_command", "&command")
+              s = s.replace(old, new, 1)
+          s = s.replace("guard vd_engine_send(rawEngine, &c) else { return false }",
+                        "guard Self.enqueue(rawEngine, &c) else { return false }")
+          s = s.replace("return vd_engine_send(rawEngine, &c)", "return Self.enqueue(rawEngine, &c)")
+          s = s.replace("_ = vd_engine_send(engine, &c)", "_ = enqueue(engine, &c)")
+          if "private static func enqueue" not in s or "vd_engine_send(rawEngine, &c)" in s:
+              raise SystemExit("DrumEngine command-queue safety patch failed")
+          p.write_text(s)
+
+          # Prevent slow sample decoding from an older restore overwriting a newer project.
+          p = Path("VekturDrum/native/Sources/VekturDrumAudio/AUStateKeeper.swift")
+          s = p.read_text()
+          s = s.replace("public enum Reason { case song, preset }", "public enum Reason: Sendable { case song, preset }")
+          anchor = "    private let library: SampleLibrary?\n"
+          if "private var sampleLoadGeneration: UInt64" not in s:
+              if anchor not in s: raise SystemExit("AUStateKeeper generation property anchor missing")
+              s = s.replace(anchor, anchor + "    private var sampleLoadGeneration: UInt64 = 0\n", 1)
+          old = """        project = r.project; cache = nil
+              apply(project, stopTransport: reason == .song)
+              lock.unlock()
+              loadSamples(for: r.project)"""
+          new = """        project = r.project; cache = nil
+              apply(project, stopTransport: reason == .song)
+              sampleLoadGeneration &+= 1
+              let generation = sampleLoadGeneration
+              lock.unlock()
+              loadSamples(for: r.project, generation: generation)"""
+          if old in s: s = s.replace(old, new, 1)
+          old = """        cache = nil
+              apply(project, stopTransport: false)
+              lock.unlock()
+              loadSamples(for: project)"""
+          new = """        cache = nil
+              apply(project, stopTransport: false)
+              sampleLoadGeneration &+= 1
+              let generation = sampleLoadGeneration
+              let restoredProject = project
+              lock.unlock()
+              loadSamples(for: restoredProject, generation: generation)"""
+          if old in s: s = s.replace(old, new, 1)
+          old = """    private func loadSamples(for p: DrumProject) {
+                  guard let library else { return }
+                  let engine = self.engine"""
+          new = """    private func loadSamples(for p: DrumProject, generation: UInt64) {
+                  guard let library else { return }
+                  let engine = self.engine"""
+          if old in s: s = s.replace(old, new, 1)
+          if "private func loadSamples(for p: DrumProject, generation: UInt64)" not in s:
+              raise SystemExit("AUStateKeeper loadSamples signature patch failed")
+          s = s.replace("""                guard let ref, let s = try? await library.decoded(ref) else { vd_engine_set_sample(engine, UInt32(t), nil); return }
+                      vd_engine_set_sample(engine, UInt32(t), EngineSamples.make(s, slices: sx, values: values, tempo: tempo))""",
+          """                guard let ref, let s = try? await library.decoded(ref) else {
+                          guard self?.isCurrentSampleLoad(generation) == true else { return }
+                          vd_engine_set_sample(engine, UInt32(t), nil)
+                          return
+                      }
+                      guard self?.isCurrentSampleLoad(generation) == true else { return }
+                      vd_engine_set_sample(engine, UInt32(t), EngineSamples.make(s, slices: sx, values: values, tempo: tempo))""")
+          if "private func isCurrentSampleLoad" not in s:
+              s += """
+          
+              private func isCurrentSampleLoad(_ generation: UInt64) -> Bool {
+                  lock.lock()
+                  defer { lock.unlock() }
+                  return sampleLoadGeneration == generation
+              }
+          """
+          p.write_text(s)
+          PY
 
       - name: Add ignore rules
         shell: bash
