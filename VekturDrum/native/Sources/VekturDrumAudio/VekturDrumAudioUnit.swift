@@ -26,6 +26,9 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
     public let isEffect: Bool
     public private(set) var engine: OpaquePointer?
     public private(set) var keeper: AUStateKeeper?
+    public private(set) var libraryLocation: AppGroupLibraryLocation?
+    public private(set) var sampleLibrary: FileSampleLibrary?
+    public private(set) var kitLibrary: FileKitLibrary?
     private var outputBus: AUAudioUnitBus!
     private var inputBus: AUAudioUnitBus?
     private var _outputBusses: AUAudioUnitBusArray!
@@ -50,7 +53,13 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         _inputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .input, busses: inputBus.map { [$0] } ?? [])
         guard let e = vd_engine_create(48000, 4096) else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(kAudioUnitErr_FailedInitialization)) }
         engine = e
-        keeper = AUStateKeeper(engine: e, library: nil)
+        let location = try? AppGroupLibraryLocation(groupIdentifier: "group.com.dreammusictemple.vekturdrum")
+        libraryLocation = location
+        if let location {
+            sampleLibrary = try? FileSampleLibrary(directory: location.samplesDirectory)
+            kitLibrary = FileKitLibrary(directory: location.kitsDirectory)
+        }
+        keeper = AUStateKeeper(engine: e, library: sampleLibrary)
         _parameterTree = Self.makeParameterTree(engine: e)
         maximumFramesToRender = 4096
         // The effect starts as a pure effect (DRUMS OFF) with the input at unity; the instrument ignores these.
