@@ -32,6 +32,7 @@ final class DrumController {
         engine = DrumEngine(borrowing: raw)
         project = keeper.currentProject()
         keeper.onRestored = { [weak self] _ in self?.reloadFromKeeper() }
+        unit.standaloneTempo = project.tempo
         startPolling()
     }
 
@@ -41,7 +42,7 @@ final class DrumController {
         return [AUStateKeeper.stateKey: data]
     }
 
-    func reloadFromKeeper() { if let k = unit.keeper { project = k.currentProject() } }
+    func reloadFromKeeper() { if let k = unit.keeper { project = k.currentProject(); unit.standaloneTempo = project.tempo } }
 
     // MARK: - telemetry (web: paintDrumLive, ~30 Hz)
     private func startPolling() {

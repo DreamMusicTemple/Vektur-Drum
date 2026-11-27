@@ -39,6 +39,13 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
     private let inScratchL: UnsafeMutablePointer<Float>, inScratchR: UnsafeMutablePointer<Float>
     private let inputList: UnsafeMutableAudioBufferListPointer   // 2 non-interleaved buffers for the effect's pull-input
     private let inputChannels: UnsafeMutablePointer<UInt32>      // the input bus's channel count (1 or 2), set in allocate
+    private let tempoBox: UnsafeMutablePointer<Double>           // the tempo used when no host provides one (standalone app)
+    /// BPM when no host musical context leads (the standalone app's own clock). Read by the render thread; a plain
+    /// aligned double store, so a new value takes effect at the next render call.
+    public var standaloneTempo: Double {
+        get { tempoBox.pointee }
+        set { tempoBox.pointee = min(400, max(20, newValue)) }
+    }
     private static let midiCapacity = 512
     /// The most frames one render call may ask for (scratch capacity). Larger requests are refused, never overrun.
     public static let maxFramesCapacity: AUAudioFrameCount = 8192
@@ -53,6 +60,7 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         inScratchL = .allocate(capacity: cap); inScratchL.initialize(repeating: 0, count: cap)
         inScratchR = .allocate(capacity: cap); inScratchR.initialize(repeating: 0, count: cap)
         inputChannels = .allocate(capacity: 1); inputChannels.initialize(to: 2)
+        tempoBox = .allocate(capacity: 1); tempoBox.initialize(to: 120)
         inputList = AudioBufferList.allocate(maximumBuffers: 2)
         inputList[0] = AudioBuffer(mNumberChannels: 1, mDataByteSize: UInt32(cap * 4), mData: UnsafeMutableRawPointer(inScratchL))
         inputList[1] = AudioBuffer(mNumberChannels: 1, mDataByteSize: UInt32(cap * 4), mData: UnsafeMutableRawPointer(inScratchR))
@@ -75,7 +83,7 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         if let e = engine { vd_engine_destroy(e) }
         midiScratch.deallocate(); busScratch.deallocate()
         outScratchL.deallocate(); outScratchR.deallocate(); inScratchL.deallocate(); inScratchR.deallocate()
-        free(inputList.unsafeMutablePointer); inputChannels.deallocate()
+        free(inputList.unsafeMutablePointer); inputChannels.deallocate(); tempoBox.deallocate()
     }
 
     // ---------------------------------------------------------------- buses, parameters
@@ -144,12 +152,12 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         // Everything the block needs, captured as plain values / pointers (never `self`).
         let e = engine!, effect = isEffect, midiCap = Self.midiCapacity, cap = Self.maxFramesCapacity
         let midi = midiScratch, bus = busScratch, outL = outScratchL, outR = outScratchR
-        let inList = inputList, inL = inScratchL, inR = inScratchR, inCh = inputChannels
+        let inList = inputList, inL = inScratchL, inR = inScratchR, inCh = inputChannels, standaloneBPM = tempoBox
         let musical = musicalContextBlock, transport = transportStateBlock
         return { actionFlags, timestamp, frameCount, outputBusNumber, outputData, realtimeEventListHead, pullInputBlock in
             if frameCount > cap { return kAudioUnitErr_TooManyFramesToProcess }
             var ctx = vd_render_context()
-            ctx.tempo = 120
+            ctx.tempo = standaloneBPM.pointee
             var tempo = 0.0, beat = 0.0
             if let musical, musical(&tempo, nil, nil, &beat, nil, nil) { ctx.tempo = tempo; ctx.host_beat = beat; ctx.host_beat_valid = true }
             var flags = AUHostTransportStateFlags(), pos = 0.0, cs = 0.0, ce = 0.0
