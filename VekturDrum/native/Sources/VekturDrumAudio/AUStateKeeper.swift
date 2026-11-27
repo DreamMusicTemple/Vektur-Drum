@@ -148,7 +148,7 @@ public final class AUStateKeeper: @unchecked Sendable {
     /// NEW (0.8): for the offline export — loads a song into this keeper's (dedicated, not playing) engine, samples
     /// included and awaited, so the render that follows has everything.
     public func loadForOffline(_ p: DrumProject) async {
-        lock.lock(); project = p; cache = nil; apply(p, stopTransport: true); lock.unlock()
+        lock.withLock { project = p; cache = nil; apply(p, stopTransport: true) }
         guard let library else { return }
         for t in 0..<TrackLimits.playable.upperBound {
             guard let ref = p.tracks[t].sample, let s = try? await library.decoded(ref), !s.channels.isEmpty else { continue }
@@ -239,8 +239,6 @@ public final class AUStateKeeper: @unchecked Sendable {
     }
 
     private func isCurrentSampleLoad(_ generation: UInt64) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return sampleLoadGeneration == generation
+        lock.withLock { sampleLoadGeneration == generation }
     }
 }
