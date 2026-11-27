@@ -49,6 +49,7 @@ final class StandaloneAudioHost: ObservableObject, StandaloneAudioHosting {
 
         let renderEngine = drum.rawEngine
         let buses = busSlots
+        let renderTempo = 120.0
         let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
         let source = AVAudioSourceNode(format: format) { isSilence, _, frameCount, audioBufferList in
             guard frameCount > 0 else { return noErr }
@@ -64,7 +65,7 @@ final class StandaloneAudioHost: ObservableObject, StandaloneAudioHosting {
             buses[0] = left
             buses[1] = right
             var context = vd_render_context()
-            context.tempo = tempo
+            context.tempo = renderTempo
             withUnsafePointer(to: &context) { ctx in
                 vd_engine_render(renderEngine, ctx, buses, buses + 1, 1, frameCount)
             }
@@ -88,7 +89,9 @@ final class StandaloneAudioHost: ObservableObject, StandaloneAudioHosting {
         sourceNode = source
         isRunning = true
         garbageTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            self?.drumEngine?.collectGarbage()
+            Task { @MainActor in
+                self?.drumEngine?.collectGarbage()
+            }
         }
     }
 
