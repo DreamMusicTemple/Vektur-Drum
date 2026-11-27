@@ -9,8 +9,8 @@ import VekturDrumDSP
 public final class DrumEngine: DrumEngineControl {
     // vd_engine_send is a single-producer queue. All Swift-side producers share this lock;
     // it is never acquired by the render thread.
-    private static let commandQueueLock = NSLock()
-    private static func enqueue(_ engine: OpaquePointer, _ command: inout vd_command) -> Bool {
+    private nonisolated(unsafe) static let commandQueueLock = NSLock()
+    private nonisolated static func enqueue(_ engine: OpaquePointer, _ command: inout vd_command) -> Bool {
         commandQueueLock.lock()
         defer { commandQueueLock.unlock() }
         return vd_engine_send(engine, &command)
