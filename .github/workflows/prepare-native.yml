@@ -71,6 +71,9 @@ jobs:
           xcuserdata/
           EOF
 
+      - name: Regenerate native parameter tables from source of truth
+        run: node VekturDrum/tools/gen_native_params.js
+
       - name: Commit extracted source and minimal fixes
         shell: bash
         run: |
