@@ -73,7 +73,12 @@ jobs:
           test -d "$APP"
           test -d "$APP/PlugIns/Vektur Drum AU.appex"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist"
-          /usr/libexec/PlistBuddy -c 'Print :NSExtension:NSExtensionAttributes:AudioComponents' "$APP/PlugIns/Vektur Drum AU.appex/Info.plist"
+          AU_INFO="$APP/PlugIns/Vektur Drum AU.appex/Info.plist"
+          test -f "$AU_INFO"
+          plutil -lint "$AU_INFO"
+          echo "AU extension Info.plist (processed archive output):"
+          plutil -p "$AU_INFO"
+          plutil -extract NSExtension.NSExtensionAttributes.AudioComponents xml1 -o - "$AU_INFO"
 
       - name: Upload simulator build product
         if: success()
