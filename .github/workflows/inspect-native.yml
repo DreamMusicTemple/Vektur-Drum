@@ -1,0 +1,59 @@
+name: Inspect native Vektur Drum project
+
+on:
+  push:
+    branches: [ "ci/inspect-vektur-drum" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Extract native project archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native-project
+          unzip -q VekturDrum-0.9.1.zip -d native-project
+          {
+            echo "## Repository root"
+            ls -la
+            echo
+            echo "## Extracted project files (first 500)"
+            find native-project -maxdepth 7 -type f | sort | head -500
+            echo
+            echo "## Xcode projects and workspaces"
+            find native-project \( -name '*.xcodeproj' -o -name '*.xcworkspace' \) -print
+            echo
+            echo "## Swift packages"
+            find native-project -name Package.swift -print
+            echo
+            echo "## Xcode version"
+            xcodebuild -version
+          } | tee native-project-report.txt
+
+      - name: Inspect Xcode schemes
+        shell: bash
+        run: |
+          set -uo pipefail
+          while IFS= read -r -d '' project; do
+            echo "===== PROJECT: $project =====" | tee -a native-project-report.txt
+            xcodebuild -list -project "$project" 2>&1 | tee -a native-project-report.txt || true
+          done < <(find native-project -name '*.xcodeproj' -print0)
+          while IFS= read -r -d '' workspace; do
+            echo "===== WORKSPACE: $workspace =====" | tee -a native-project-report.txt
+            xcodebuild -list -workspace "$workspace" 2>&1 | tee -a native-project-report.txt || true
+          done < <(find native-project -name '*.xcworkspace' -print0)
+
+      - name: Save inspection report
+        uses: actions/upload-artifact@v4
+        with:
+          name: vektur-drum-native-inspection
+          path: native-project-report.txt
+          if-no-files-found: error
