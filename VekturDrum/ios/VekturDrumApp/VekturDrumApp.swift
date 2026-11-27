@@ -12,7 +12,6 @@ struct VekturDrumApp: App {
                 .task {
                     do {
                         try await host.start()
-                        host.engine?.sync(from: project)
                     } catch {
                         // The screen remains available and exposes the audio-start failure.
                     }
