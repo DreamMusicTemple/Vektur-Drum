@@ -1,0 +1,50 @@
+name: VekturDrum
+options:
+  bundleIdPrefix: com.dreammusictemple
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  VekturDrumKit:
+    path: ../native
+targets:
+  Vektur Drum:
+    type: application
+    platform: iOS
+    sources:
+      - path: VekturDrumApp
+    info:
+      path: VekturDrumApp/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dreammusictemple.vekturdrum
+        PRODUCT_NAME: Vektur Drum
+        SWIFT_VERSION: 5.0
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - package: VekturDrumKit
+        product: VekturDrumCore
+      - package: VekturDrumKit
+        product: VekturDrumAudio
+      - target: Vektur Drum AU
+        embed: true
+  Vektur Drum AU:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: VekturDrumAU
+    info:
+      path: VekturDrumAU/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dreammusictemple.vekturdrum.au
+        PRODUCT_NAME: Vektur Drum AU
+        SWIFT_VERSION: 5.0
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - package: VekturDrumKit
+        product: VekturDrumAudio

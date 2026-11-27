@@ -1,0 +1,486 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		25080A5542F439A960A60474 /* VekturDrumAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 9FB5167CDAD11401F3026E15 /* VekturDrumAudio */; };
+		46456986F114705B0ABE302C /* Vektur Drum AU.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 608D05D559D5D032D903BF83 /* Vektur Drum AU.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4FC795F9D6113B4CAE621EFC /* VekturDrumApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEDCCB31B8A4943EEB442E69 /* VekturDrumApp.swift */; };
+		F10D1A5E1A513F6F17C71146 /* VekturDrumCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6B495209BD7B8757F4A3F51C /* VekturDrumCore */; };
+		F6C47172CD520EDD09305060 /* VekturDrumAudio in Frameworks */ = {isa = PBXBuildFile; productRef = D7F94EE3CC7D4DF87D99CB83 /* VekturDrumAudio */; };
+		FF8943D53613AD5A198FEA70 /* AUViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F89DDE86FB4BCD6B69146C94 /* AUViewController.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8F3B06C97ABEA24E227D8352 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9632697DF215A04D49211164 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 113457E1ED4E20B4FED3DA2D;
+			remoteInfo = "Vektur Drum AU";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		061EA7A922236D5E22EBDEEA /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				46456986F114705B0ABE302C /* Vektur Drum AU.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		26231B2BFDD054D66E2F67B1 /* Vektur Drum.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Vektur Drum.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D006AEA8281BCEDBC8D4DBA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		608D05D559D5D032D903BF83 /* Vektur Drum AU.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = "Vektur Drum AU.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DEDCCB31B8A4943EEB442E69 /* VekturDrumApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VekturDrumApp.swift; sourceTree = "<group>"; };
+		DFD22FF1627891E565B5362F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F472F81ADDBAFCEA07B2321B /* native */ = {isa = PBXFileReference; lastKnownFileType = folder; name = native; path = ../native; sourceTree = SOURCE_ROOT; };
+		F89DDE86FB4BCD6B69146C94 /* AUViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AUViewController.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		465F85A8980A64D154B9D85E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F10D1A5E1A513F6F17C71146 /* VekturDrumCore in Frameworks */,
+				F6C47172CD520EDD09305060 /* VekturDrumAudio in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7B6E9D4DE7A448068431550 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				25080A5542F439A960A60474 /* VekturDrumAudio in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		32D8BFFDD12B39882A8BBE0A /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				F472F81ADDBAFCEA07B2321B /* native */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		37E562D6A4C0C873B29A18C8 = {
+			isa = PBXGroup;
+			children = (
+				32D8BFFDD12B39882A8BBE0A /* Packages */,
+				E1142895BA2163CA979E6810 /* VekturDrumApp */,
+				E724CAA48378B0C58B565E3D /* VekturDrumAU */,
+				40214A4CA69943D4F32F456F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		40214A4CA69943D4F32F456F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				608D05D559D5D032D903BF83 /* Vektur Drum AU.appex */,
+				26231B2BFDD054D66E2F67B1 /* Vektur Drum.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E1142895BA2163CA979E6810 /* VekturDrumApp */ = {
+			isa = PBXGroup;
+			children = (
+				DFD22FF1627891E565B5362F /* Info.plist */,
+				DEDCCB31B8A4943EEB442E69 /* VekturDrumApp.swift */,
+			);
+			path = VekturDrumApp;
+			sourceTree = "<group>";
+		};
+		E724CAA48378B0C58B565E3D /* VekturDrumAU */ = {
+			isa = PBXGroup;
+			children = (
+				F89DDE86FB4BCD6B69146C94 /* AUViewController.swift */,
+				3D006AEA8281BCEDBC8D4DBA /* Info.plist */,
+			);
+			path = VekturDrumAU;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		113457E1ED4E20B4FED3DA2D /* Vektur Drum AU */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E25A7417557847FE65C4F4B /* Build configuration list for PBXNativeTarget "Vektur Drum AU" */;
+			buildPhases = (
+				E32BA98011AC63711FBACBC5 /* Sources */,
+				E7B6E9D4DE7A448068431550 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Vektur Drum AU";
+			packageProductDependencies = (
+				9FB5167CDAD11401F3026E15 /* VekturDrumAudio */,
+			);
+			productName = "Vektur Drum AU";
+			productReference = 608D05D559D5D032D903BF83 /* Vektur Drum AU.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		5AAE2640B38B67DCCF1F568C /* Vektur Drum */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E3E88EE710CF69D779E9144 /* Build configuration list for PBXNativeTarget "Vektur Drum" */;
+			buildPhases = (
+				86CF231ACD780DCDDDF8127E /* Sources */,
+				465F85A8980A64D154B9D85E /* Frameworks */,
+				061EA7A922236D5E22EBDEEA /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				020CC224C2AF0D3DA85AF401 /* PBXTargetDependency */,
+			);
+			name = "Vektur Drum";
+			packageProductDependencies = (
+				6B495209BD7B8757F4A3F51C /* VekturDrumCore */,
+				D7F94EE3CC7D4DF87D99CB83 /* VekturDrumAudio */,
+			);
+			productName = "Vektur Drum";
+			productReference = 26231B2BFDD054D66E2F67B1 /* Vektur Drum.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9632697DF215A04D49211164 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					113457E1ED4E20B4FED3DA2D = {
+						ProvisioningStyle = Automatic;
+					};
+					5AAE2640B38B67DCCF1F568C = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 7381898A927693B37C872EFE /* Build configuration list for PBXProject "VekturDrum" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 37E562D6A4C0C873B29A18C8;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				906C48BB35E9E52E4F9CB3F4 /* XCLocalSwiftPackageReference "../native" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 40214A4CA69943D4F32F456F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5AAE2640B38B67DCCF1F568C /* Vektur Drum */,
+				113457E1ED4E20B4FED3DA2D /* Vektur Drum AU */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		86CF231ACD780DCDDDF8127E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4FC795F9D6113B4CAE621EFC /* VekturDrumApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E32BA98011AC63711FBACBC5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF8943D53613AD5A198FEA70 /* AUViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		020CC224C2AF0D3DA85AF401 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 113457E1ED4E20B4FED3DA2D /* Vektur Drum AU */;
+			targetProxy = 8F3B06C97ABEA24E227D8352 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2D51100F2533279706EE1DF5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		570731F02875CA9D2C07FFA7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		64FA521BCCCBD974F6964816 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VekturDrumAU/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dreammusictemple.vekturdrum.au;
+				PRODUCT_NAME = "Vektur Drum AU";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		9698E44548AB4E9A25757225 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VekturDrumApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dreammusictemple.vekturdrum;
+				PRODUCT_NAME = "Vektur Drum";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		ADA75A0E06C7FD80C18F0F8A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VekturDrumApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dreammusictemple.vekturdrum;
+				PRODUCT_NAME = "Vektur Drum";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FB087DF2E228B006CE0EA6D1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VekturDrumAU/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dreammusictemple.vekturdrum.au;
+				PRODUCT_NAME = "Vektur Drum AU";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0E25A7417557847FE65C4F4B /* Build configuration list for PBXNativeTarget "Vektur Drum AU" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64FA521BCCCBD974F6964816 /* Debug */,
+				FB087DF2E228B006CE0EA6D1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7381898A927693B37C872EFE /* Build configuration list for PBXProject "VekturDrum" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D51100F2533279706EE1DF5 /* Debug */,
+				570731F02875CA9D2C07FFA7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8E3E88EE710CF69D779E9144 /* Build configuration list for PBXNativeTarget "Vektur Drum" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ADA75A0E06C7FD80C18F0F8A /* Debug */,
+				9698E44548AB4E9A25757225 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		906C48BB35E9E52E4F9CB3F4 /* XCLocalSwiftPackageReference "../native" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../native;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6B495209BD7B8757F4A3F51C /* VekturDrumCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VekturDrumCore;
+		};
+		9FB5167CDAD11401F3026E15 /* VekturDrumAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VekturDrumAudio;
+		};
+		D7F94EE3CC7D4DF87D99CB83 /* VekturDrumAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VekturDrumAudio;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9632697DF215A04D49211164 /* Project object */;
+}
