@@ -71,6 +71,31 @@ jobs:
           xcuserdata/
           EOF
 
+      - name: Apply remaining reviewed Swift model and test fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("VekturDrum/native/Sources/VekturDrumCore/Parameters.swift")
+          s = p.read_text()
+          old = "    case fmAlgorithm = 64, fmFreq, fmRatio, fmRatio2, fmIndex, fmIndexDecay, fmFeedback, fmFold, fmNoise"
+          new = "    case long = 56   // NEW (0.9.1): extended decay toggle\\n" + old
+          if old not in s:
+              raise SystemExit("TrackParameter FM enum anchor not found")
+          p.write_text(s.replace(old, new, 1))
+
+          p = Path("VekturDrum/native/Tests/VekturDrumCoreTests/SlicerModStateTests.swift")
+          s = p.read_text()
+          old = 'for style in ["IDM", "Techno", "Lo-Fi & Downtempo", "80s Electro", "Breakbeat", "Ambient"] { XCTAssertEqual(kits.filter { $0.category == style }.count, 10, style) }'
+          new = '''for style in ["IDM", "Techno", "Lo-Fi & Downtempo", "80s Electro", "Breakbeat", "Ambient"] {
+                      let expected = style == "Techno" ? 11 : 10 // legacy Warehouse Techno plus 10 generated kits
+                      XCTAssertEqual(kits.filter { $0.category == style }.count, expected, style)
+                  }'''
+          if old not in s:
+              raise SystemExit("Factory category test anchor not found")
+          p.write_text(s.replace(old, new, 1))
+          PY
+
       - name: Fix multi-digit track filtering in parameter generator
         shell: bash
         run: |
