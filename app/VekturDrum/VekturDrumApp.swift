@@ -53,6 +53,7 @@ final class StandaloneHost {
             if let starter = DrumController.starterState() { au.keeper?.restore(starter, reason: .song) }   // the web app's new set
             controller = DrumController(unit: au)
             observe()
+            if ReferenceRender.requested, let c = controller { await ReferenceRender.run(c) }
         } catch let e {
             error = "Audio could not start: \(e.localizedDescription)"
         }
