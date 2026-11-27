@@ -232,6 +232,19 @@ jobs:
                 - package: VekturDrumKit
                   product: VekturDrumAudio
           YAML
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("VekturDrum/ios/VekturDrumAU/AUViewController.swift")
+          s = p.read_text()
+          s = s.replace("public final class AUViewController: AUViewController, AUAudioUnitFactory {",
+                        "public final class VekturDrumAUViewController: CoreAudioKit.AUViewController, AUAudioUnitFactory {")
+          if "VekturDrumAUViewController: CoreAudioKit.AUViewController" not in s:
+              raise SystemExit("AU view-controller rename failed")
+          p.write_text(s)
+          p = Path("VekturDrum/ios/VekturDrumAU/Info.plist")
+          p.write_text(p.read_text().replace("$(PRODUCT_MODULE_NAME).AUViewController",
+                                             "$(PRODUCT_MODULE_NAME).VekturDrumAUViewController"))
+          PY
           cd VekturDrum/ios
           xcodegen generate
           xcodebuild -list -project VekturDrum.xcodeproj
