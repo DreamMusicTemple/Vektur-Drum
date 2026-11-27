@@ -245,8 +245,18 @@ jobs:
           p.write_text(p.read_text().replace("$(PRODUCT_MODULE_NAME).AUViewController",
                                              "$(PRODUCT_MODULE_NAME).VekturDrumAUViewController"))
           p = Path("VekturDrum/ios/VekturDrumApp/VekturDrumApp.swift")
-          s = p.read_text().replace("List(0..<project.trackCount, id: \\.self) { track in",
-                                    "ForEach(0..<project.trackCount, id: \\.self) { track in")
+          s = p.read_text()
+          old = r'''                          List(0..<project.trackCount, id: \.self) { track in
+                              HStack {
+                                  Text("TRACK \(track + 1)")
+                                  Spacer()
+                                  Text(project.tracks[track].name)
+                                      .foregroundStyle(.secondary)
+                              }
+                          }'''
+          if old not in s:
+              raise SystemExit("SwiftUI track list block not found")
+          s = s.replace(old, '                          Text("TRACKS: \\(project.trackCount)")')
           p.write_text(s)
           PY
           cd VekturDrum/ios
