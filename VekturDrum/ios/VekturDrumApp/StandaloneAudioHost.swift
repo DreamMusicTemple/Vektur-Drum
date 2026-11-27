@@ -10,6 +10,7 @@ import VekturDrumDSP
 @MainActor
 final class StandaloneAudioHost: ObservableObject, StandaloneAudioHosting {
     @Published private(set) var isRunning = false
+    var tempo: Double = 120
 
     private let audioEngine = AVAudioEngine()
     private let busSlots = UnsafeMutablePointer<UnsafeMutablePointer<Float>?>.allocate(capacity: 2)
@@ -63,7 +64,7 @@ final class StandaloneAudioHost: ObservableObject, StandaloneAudioHosting {
             buses[0] = left
             buses[1] = right
             var context = vd_render_context()
-            context.tempo = 120
+            context.tempo = tempo
             withUnsafePointer(to: &context) { ctx in
                 vd_engine_render(renderEngine, ctx, buses, buses + 1, 1, frameCount)
             }
