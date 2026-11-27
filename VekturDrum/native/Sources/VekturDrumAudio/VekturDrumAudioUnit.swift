@@ -42,6 +42,7 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
     public override init(componentDescription: AudioComponentDescription, options: AudioComponentInstantiationOptions = []) throws {
         isEffect = componentDescription.componentType != kAudioUnitType_MusicDevice
         try super.init(componentDescription: componentDescription, options: options)
+        busScratch.initialize(repeating: nil, count: 2)
         let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
         outputBus = try AUAudioUnitBus(format: format); outputBus.maximumChannelCount = 2
         _outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
@@ -49,7 +50,6 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
         _inputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .input, busses: inputBus.map { [$0] } ?? [])
         guard let e = vd_engine_create(48000, 4096) else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(kAudioUnitErr_FailedInitialization)) }
         engine = e
-        busScratch.initialize(repeating: nil, count: 2)
         keeper = AUStateKeeper(engine: e, library: nil)
         _parameterTree = Self.makeParameterTree(engine: e)
         maximumFramesToRender = 4096
