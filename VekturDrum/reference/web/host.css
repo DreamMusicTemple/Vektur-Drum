@@ -1,0 +1,9 @@
+/* Vektur Drum — standalone layout (new code). The extracted panel CSS is Vektur VJ's bottom sheet, injected at
+   run time (after this sheet), so these rules carry a `body` prefix to win on specificity. Here the sheet is the
+   whole page: top-aligned, centred, and the page scrolls when the screen is short. */
+html,body{overflow:auto;height:auto;min-height:100%;background:#0c0d0e}
+body #drumModal.codelab{position:static;display:flex;align-items:flex-start;justify-content:center;background:transparent;pointer-events:auto;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body #drumModal.codelab .sheet{width:min(80rem,100vw);max-height:none;overflow:visible;border-radius:.7rem;box-shadow:0 10px 40px rgba(0,0,0,.6);margin:.5rem 0}
+body #drumModal.codelab .dm{border-radius:.7rem}
+body #drumModal.codelab .dmseq{overflow-x:auto}

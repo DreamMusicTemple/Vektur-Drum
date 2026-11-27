@@ -1,0 +1,44 @@
+:root{
+  --bg:#121410;--panel:#1F221A;--panel2:#161812;--line:#2C3024;--text:#E9E8DF;--muted:#A9AC9A;
+  --accent:#FF7A1A;--accentText:#161812;--accent2:#B8C26A;--warn:#E5482F;
+}
+html{font-size:calc(13px * var(--scale));-webkit-text-size-adjust:100%}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:"Chakra Petch","Avenir Next","Segoe UI",system-ui,sans-serif;overflow:hidden;touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit}
+.spacer{flex:1}
+.cbtn{height:2.4rem;min-width:2.4rem;border:1px solid var(--line);border-radius:.25rem;background:transparent;font-size:.8rem;padding:0 .4rem}
+.cbtn.on{background:var(--accent);color:var(--accentText);border-color:var(--accent)}
+.sheet{width:min(46rem,94vw);max-height:90dvh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:.6rem;padding:1rem 1.2rem}
+.sheet h2{margin:.2rem 0 .8rem;font-size:1.2rem;display:flex;align-items:center}
+.sheet h4{margin:1.1rem 0 .5rem;font-size:.8rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.modal.open{display:flex}
+.toast{position:fixed;left:50%;bottom:2rem;transform:translateX(-50%);background:var(--accent);color:var(--accentText);padding:.6rem 1rem;border-radius:.4rem;font-weight:700;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+.clhelp{font-size:.8rem;color:var(--muted);margin-top:.5rem}.clhelp code{color:var(--text)}
+.kcell{display:flex;flex-direction:column;align-items:center;gap:.12rem;width:4.3rem;flex:none;user-select:none;-webkit-user-select:none}
+.kcell .klbl{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:#9a9ea6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.kcell .kval{font:600 .62rem ui-monospace,Menlo,monospace;color:#d8d4c8;background:#090b0c;border-radius:.2rem;padding:.05rem .3rem;min-width:2.8rem;text-align:center;box-shadow:inset 0 1px 2px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.05)}
+.knob{--a:-135deg;--s:0deg;--e:0deg;--kled:#ffb23d;position:relative;width:2.9rem;height:2.9rem;border-radius:50%;touch-action:none;cursor:ns-resize;outline:none}
+.kcell.big .knob{width:3.8rem;height:3.8rem}
+.knob u{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 225deg,#25272b 0 var(--s),var(--kled) var(--s) var(--e),#25272b var(--e) 270deg,transparent 270deg);
+ -webkit-mask:radial-gradient(circle,transparent 61%,#000 63%);mask:radial-gradient(circle,transparent 61%,#000 63%)}
+.knob b{position:absolute;inset:17%;border-radius:50%;background:radial-gradient(circle at 50% 22%,#5b5f66 0,#34373c 42%,#1d1f22 78%);
+ box-shadow:0 .2rem .3rem rgba(0,0,0,.75),0 .05rem 0 rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -.12rem .2rem rgba(0,0,0,.55)}
+.knob i{position:absolute;inset:17%;transform:rotate(var(--a));pointer-events:none}
+.knob i::after{content:'';position:absolute;left:50%;top:7%;width:2px;height:34%;margin-left:-1px;border-radius:1px;background:#efe9dc;box-shadow:0 0 2px rgba(255,220,160,.35)}
+.knob:focus-visible b{box-shadow:0 0 0 2px var(--accent),0 .2rem .3rem rgba(0,0,0,.75)}
+.knob.turn b{background:radial-gradient(circle at 50% 22%,#666a71 0,#3a3d42 42%,#1f2124 78%)}
+.knob.learn u{--kled:#3dd6ff}
+/* Vektur Drum — standalone layout (new code). The extracted panel CSS is Vektur VJ's bottom sheet, injected at
+   run time (after this sheet), so these rules carry a `body` prefix to win on specificity. Here the sheet is the
+   whole page: top-aligned, centred, and the page scrolls when the screen is short. */
+html,body{overflow:auto;height:auto;min-height:100%;background:#0c0d0e}
+body #drumModal.codelab{position:static;display:flex;align-items:flex-start;justify-content:center;background:transparent;pointer-events:auto;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body #drumModal.codelab .sheet{width:min(80rem,100vw);max-height:none;overflow:visible;border-radius:.7rem;box-shadow:0 10px 40px rgba(0,0,0,.6);margin:.5rem 0}
+body #drumModal.codelab .dm{border-radius:.7rem}
+body #drumModal.codelab .dmseq{overflow-x:auto}
+
