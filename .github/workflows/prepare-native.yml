@@ -237,6 +237,24 @@ jobs:
           xcodebuild -list -project VekturDrum.xcodeproj
           xcodebuild -project VekturDrum.xcodeproj -scheme "Vektur Drum" -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
 
+      - name: Fix AU extension view-controller class name
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("VekturDrum/ios/VekturDrumAU/AUViewController.swift")
+          s = p.read_text()
+          s = s.replace("public final class AUViewController: AUViewController, AUAudioUnitFactory {",
+                        "public final class VekturDrumAUViewController: CoreAudioKit.AUViewController, AUAudioUnitFactory {")
+          if "VekturDrumAUViewController: CoreAudioKit.AUViewController" not in s:
+              raise SystemExit("AU view-controller declaration was not updated")
+          p.write_text(s)
+          p = Path("VekturDrum/ios/VekturDrumAU/Info.plist")
+          s = p.read_text().replace("$(PRODUCT_MODULE_NAME).AUViewController",
+                                    "$(PRODUCT_MODULE_NAME).VekturDrumAUViewController")
+          p.write_text(s)
+          PY
+
       - name: Update parameter-count assertion for 0.9.1 long-decay control
         shell: bash
         run: |
