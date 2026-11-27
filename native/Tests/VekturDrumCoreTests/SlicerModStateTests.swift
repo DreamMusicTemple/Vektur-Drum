@@ -9,7 +9,8 @@ final class SlicerModStateTests: XCTestCase {
         XCTAssertEqual(ParameterID.master(.slicerHold).address, 91)     // VD_MP_SLICER_HOLD
         XCTAssertEqual(ParameterID.master(.envInput).address, 96)       // VD_MP_ENV_INPUT
         XCTAssertEqual(ParameterID.master(.chaosRate).address, 105)     // VD_MP_CHAOS_RATE
-        for spec in ParameterSpec.master where spec.index >= 80 && spec.index < 1024 {   // tracks 10–12 (0.9) sit in this table at track addresses XCTAssertNotNil(MasterParameter(rawValue: spec.index), spec.key) }
+        // tracks 10–12 (0.9) sit in the master table at track addresses (≥ 1024): not master parameters
+        for spec in ParameterSpec.master where spec.index >= 80 && spec.index < 1024 { XCTAssertNotNil(MasterParameter(rawValue: spec.index), spec.key) }
         XCTAssertEqual(ParameterID(key: "sl.density")?.address, 84)
         XCTAssertEqual(ParameterID(key: "t3.decay")?.address, 1024 + 2 * 256 + 2)
         XCTAssertEqual(ParameterID(key: "t12.decay")?.address, 1024 + 11 * 256 + 2)   // 0.9: 12 tracks

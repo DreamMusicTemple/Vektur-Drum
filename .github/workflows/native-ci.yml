@@ -41,7 +41,9 @@ jobs:
 
   dsp:
     name: C++ engine suite
-    runs-on: ubuntu-latest
+    # Pinned: the web↔C++ parity reference was recorded on Ubuntu 24.04 (glibc 2.39). Newer glibc (26.04) rounds some
+    # maths functions differently, which chaotic sections (FM feedback, Lorenz) amplify. The engine itself is unaffected.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
