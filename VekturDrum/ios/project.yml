@@ -40,8 +40,6 @@ targets:
             }
           }
           JSON
-    info:
-      path: VekturDrumApp/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dreammusictemple.vekturdrum
@@ -49,6 +47,7 @@ targets:
         SWIFT_VERSION: 5.0
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: VekturDrumApp/Info.plist
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: VekturDrumApp/VekturDrumApp.entitlements
         MARKETING_VERSION: 0.9.1
@@ -69,8 +68,6 @@ targets:
     sources:
       - path: VekturDrumAU
       - path: Shared
-    info:
-      path: VekturDrumAU/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dreammusictemple.vekturdrum.au
@@ -79,6 +76,7 @@ targets:
         APPLICATION_EXTENSION_API_ONLY: YES
         SKIP_INSTALL: YES
         GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: VekturDrumAU/Info.plist
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: VekturDrumAU/VekturDrumAU.entitlements
         MARKETING_VERSION: 0.9.1
