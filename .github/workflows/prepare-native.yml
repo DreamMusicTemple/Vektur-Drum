@@ -88,3 +88,5 @@ jobs:
           swift --version
           swift build
           swift test
+
+# Trigger corrected package preparation run.
