@@ -1,4 +1,4 @@
-name: Inspect native Vektur Drum project
+name: Inspect native Vektur Drum project (automatic run)
 
 on:
   push:
