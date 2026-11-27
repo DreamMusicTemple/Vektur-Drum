@@ -1,0 +1,103 @@
+name: TestFlight
+
+# Archives the app (with its AUv3 extension), signs it with Xcode's automatic signing through the App Store Connect API
+# key, and uploads it to App Store Connect, where it appears in TestFlight after Apple's processing.
+#
+# Needs repository secrets ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (a Team key with the Admin role, so Xcode may create the
+# extension's App ID, profiles and a cloud-managed distribution certificate). The bundle ID and team are looked up from
+# the App Store Connect app named "Vektur Drum"; repository variables BUNDLE_ID / APPLE_TEAM_ID override the lookup.
+#
+# Runs when started from the Actions tab, or on a push whose commit message contains [testflight].
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+
+jobs:
+  upload:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[testflight]')
+    runs-on: macos-15
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      APP_NAME: Vektur Drum
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the secrets (names only)
+        run: |
+          ok=1; for n in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do if [ -n "${!n}" ]; then echo "$n: set"; else echo "::error::$n is missing"; ok=0; fi; done
+          case "$ASC_KEY_P8" in *"BEGIN PRIVATE KEY"*) ;; *) echo "::error::ASC_KEY_P8 must be the whole .p8 file, BEGIN/END lines included"; ok=0;; esac
+          [ $ok = 1 ]
+      - name: Install the API key
+        run: |
+          mkdir -p ~/private_keys && printf '%s\n' "$ASC_KEY_P8" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          echo "KEY_PATH=$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8" >> $GITHUB_ENV
+      - name: Find the app's bundle ID, team and next build number
+        env:
+          VAR_BUNDLE_ID: ${{ vars.BUNDLE_ID }}
+          VAR_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: |
+          python3 -m pip install --quiet --break-system-packages pyjwt cryptography requests 2>/dev/null || python3 -m pip install --quiet pyjwt cryptography requests
+          python3 - <<'PY'
+          import os, time, jwt, requests, sys
+          key = open(os.environ["KEY_PATH"]).read()
+          tok = jwt.encode({"iss": os.environ["ASC_ISSUER_ID"].strip(), "iat": int(time.time()), "exp": int(time.time()) + 900, "aud": "appstoreconnect-v1"},
+                           key, algorithm="ES256", headers={"kid": os.environ["ASC_KEY_ID"].strip(), "typ": "JWT"})
+          h = {"Authorization": f"Bearer {tok}"}; api = "https://api.appstoreconnect.apple.com/v1"
+          apps = requests.get(f"{api}/apps?limit=200&fields[apps]=name,bundleId", headers=h)
+          if not apps.ok: print("::error::App Store Connect API:", apps.status_code, apps.text[:300]); sys.exit(1)
+          apps = apps.json()["data"]
+          for a in apps: print("app:", a["attributes"]["name"], "→", a["attributes"]["bundleId"])
+          want = os.environ.get("VAR_BUNDLE_ID") or ""
+          app = next((a for a in apps if (want and a["attributes"]["bundleId"] == want) or (not want and a["attributes"]["name"].strip().lower() == os.environ["APP_NAME"].lower())), None)
+          if not app: print(f"::error::No App Store Connect app named {os.environ['APP_NAME']!r} (or with bundle ID {want!r})"); sys.exit(1)
+          bid = app["attributes"]["bundleId"]
+          ids = requests.get(f"{api}/bundleIds?limit=200&filter[identifier]={bid}&fields[bundleIds]=identifier,seedId", headers=h).json().get("data", [])
+          team = os.environ.get("VAR_TEAM_ID") or next((b["attributes"]["seedId"] for b in ids if b["attributes"]["identifier"] == bid), "")
+          if not team: print("::error::Could not find the team for", bid); sys.exit(1)
+          builds = requests.get(f"{api}/builds?filter[app]={app['id']}&sort=-uploadedDate&limit=50&fields[builds]=version", headers=h).json().get("data", [])
+          nums = [int(b["attributes"]["version"]) for b in builds if b["attributes"]["version"].isdigit()]
+          build = max(nums + [int(os.environ.get("GITHUB_RUN_NUMBER", "1"))]) + 1
+          print(f"bundle ID {bid} · team {team} · build {build}")
+          with open(os.environ["GITHUB_ENV"], "a") as f: f.write(f"BUNDLE_ID={bid}\nAPPLE_TEAM_ID={team}\nBUILD_NUMBER={build}\n")
+          PY
+      - name: Generate the Xcode project
+        working-directory: app
+        run: brew install xcodegen && xcodegen
+      - name: Archive (signed with automatic signing via the API key)
+        run: |
+          set -o pipefail
+          xcodebuild -project app/VekturDrum.xcodeproj -scheme VekturDrum -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath build/VekturDrum.xcarchive -skipPackagePluginValidation \
+            -allowProvisioningUpdates -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic archive 2>&1 | tee archive.log | grep -E "error:|warning: .*(sign|profile|provision)|ARCHIVE (SUCCEEDED|FAILED)"
+      - name: Upload to App Store Connect
+        run: |
+          set -o pipefail
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath build/VekturDrum.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/export \
+            -allowProvisioningUpdates -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" 2>&1 | tee export.log \
+            | grep -E "error|Upload|EXPORT (SUCCEEDED|FAILED)|Progress"
+      - name: Keep the logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testflight-logs
+          path: |
+            archive.log
+            export.log
+      - name: Remove the key
+        if: always()
+        run: rm -rf ~/private_keys

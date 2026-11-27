@@ -41,6 +41,8 @@ jobs:
   app:
     name: App + AUv3 (iOS Simulator, unsigned)
     runs-on: macos-15
+    permissions:
+      contents: write   # pushes the simulator renders to the ui-renders branch
     steps:
       - uses: actions/checkout@v4
       - name: XcodeGen
@@ -67,6 +69,13 @@ jobs:
           for i in $(seq 1 60); do [ -f "$DATA/Documents/ui-native/DONE" ] && break; sleep 2; done
           mkdir -p ui-native && cp "$DATA"/Documents/ui-native/*.png ui-native/ && ls -la ui-native
           xcrun simctl io "$DEV" screenshot ui-native/simulator-screen.png || true
+      - name: Publish the renders to the ui-renders branch
+        if: github.ref_name == 'native-testflight'
+        run: |
+          D=$(mktemp -d); cp -r ui-native "$D/"; cd "$D"
+          git init -q -b ui-renders && git add -A
+          git -c user.name="Vektur Drum CI" -c user.email="ci@users.noreply.github.com" commit -q -m "Native renders for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" ui-renders
       - name: Keep the log and renders
         if: always()
         uses: actions/upload-artifact@v4
