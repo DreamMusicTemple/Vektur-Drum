@@ -631,7 +631,7 @@ struct LfoSection: View {
         }
         .overlay(alignment: .topTrailing) {
             HStack(spacing: m.r(0.4)) {
-                Button { c.window = .mod } label: { ModChip(source: i - 1, level: Double(c.modSources[safe: i - 1] ?? 0) * 0.5 + 0.5, compact: true) }.buttonStyle(.plain)
+                ModChipButton(c: c, source: i - 1, compact: true)
                 Circle().fill(th.cyan).frame(width: m.r(0.45), height: m.r(0.45)).shadow(color: th.cyan, radius: 3).opacity(c.lfoLamp[safe: i - 1] ?? 0.15)
             }
             .padding(.trailing, m.r(0.55)).padding(.top, m.r(0.12))

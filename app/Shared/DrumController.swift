@@ -51,6 +51,15 @@ final class DrumController {
     var sampleMenu: SampleMenuRequest?
     var sampleImportTrack: Int?
     @ObservationIgnored var suppressNextTap = false
+    /// Modulation: a picked source waiting for a tap on a dial (web MODW.pick), the live lights on modulated dials,
+    /// and the hold-to-modulate popup.
+    var modPick = -1
+    var modLights: [String: ModLight] = [:]
+    var modPopup: ModPopupRequest?
+    var modGroup = "Slicer"
+    /// The Slicer's playing slice and its action (web paintSlicerLive), −1 = off.
+    var slicerLive = -1
+    var slicerLiveAction = 0
     /// The PADS window's VEL readout.
     var lastPadVelocity: Int?
 
@@ -92,8 +101,16 @@ final class DrumController {
             for t in 0..<min(tel.envelope.count, lit.count) { lit[t] = tel.envelope[t] > 0.08 }
             if lit != padLit { padLit = lit }
             if tel.modSources != modSources { modSources = tel.modSources }
+            updateModPositions(tel)
+            if tel.slicerSlice != slicerLive { slicerLive = tel.slicerSlice }
+            if tel.slicerAction != slicerLiveAction { slicerLiveAction = tel.slicerAction }
             if tel.modSources.count >= 3 {
-                let l = (0..<3).map { (0.15 + 0.85 * (Double(tel.modSources[$0]) * 0.5 + 0.5) * 100).rounded() / 100 }
+                var l: [Double] = []
+                for i in 0..<3 {
+                    let v: Double = Double(tel.modSources[i]) * 0.5 + 0.5
+                    let a: Double = 0.15 + 0.85 * v
+                    l.append((a * 100).rounded() / 100)
+                }
                 if l != lfoLamp { lfoLamp = l }
             }
         }

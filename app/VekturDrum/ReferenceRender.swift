@@ -16,7 +16,7 @@ enum ReferenceRender {
         for (name, w) in sizes {
             let m = PanelMetrics(width: w), th = PanelTheme(c.theme)
             let view = DrumPanel(c: c).frame(width: m.sheetWidth).padding(.top, m.sheetTop).frame(width: w).background(th.chassis[5])
-                .environment(\.panel, m).environment(\.theme, th).environment(\.referenceRender, true)
+                .environment(\.panel, m).environment(\.theme, th).environment(\.referenceRender, true).environment(\.drum, c)
             let r = ImageRenderer(content: view); r.scale = 2; r.proposedSize = ProposedViewSize(width: w, height: nil)
             if let img = r.uiImage, let png = img.pngData() { try? png.write(to: dir.appendingPathComponent("\(name).png")) }
         }

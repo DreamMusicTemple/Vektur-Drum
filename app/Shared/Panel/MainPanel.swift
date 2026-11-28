@@ -28,6 +28,16 @@ struct PanelRoot: View {
                     }
                 }
             }
+            .overlay(alignment: .topLeading) {
+                if let req = controller.modPopup {
+                    ZStack(alignment: .topLeading) {
+                        Color.black.opacity(0.001).onTapGesture { controller.modPopup = nil }
+                        ModPopupView(c: controller, key: req.key)
+                            .frame(width: min(m.r(26), geo.size.width * 0.94))
+                            .offset(x: max(8, min(geo.size.width - min(m.r(26), geo.size.width * 0.94) - 8, req.point.x - m.r(13))), y: max(8, min(geo.size.height - m.r(16), req.point.y + 18)))
+                    }
+                }
+            }
             .overlay(alignment: .bottom) { if let t = controller.toastText { ToastView(text: t) } }
             .coordinateSpace(name: "root")
             .fileImporter(isPresented: Binding(get: { controller.sampleImportTrack != nil }, set: { if !$0 { controller.sampleImportTrack = nil } }),
@@ -35,7 +45,7 @@ struct PanelRoot: View {
                 if let t = controller.sampleImportTrack, case .success(let url) = r { controller.importSample(track: t, url: url) }
                 controller.sampleImportTrack = nil
             }
-            .environment(\.panel, m).environment(\.theme, th)
+            .environment(\.panel, m).environment(\.theme, th).environment(\.drum, controller)
         }
     }
 }

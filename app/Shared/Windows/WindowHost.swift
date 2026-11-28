@@ -46,22 +46,26 @@ struct ModalSheet<Content: View>: View {
     var dim = true
     var closeLabel = "Close"
     var onClose: (() -> Void)? = nil
+    var titleSize: CGFloat = 1.2       // rem (h2)
+    var pad: (v: CGFloat, h: CGFloat) = (1, 1.2)
+    var accessory: AnyView? = nil      // controls between the title and Close (h2 children)
     @ViewBuilder var content: Content
     var body: some View {
         GeometryReader { g in
             ZStack {
                 if dim { Color.black.opacity(0.55).ignoresSafeArea().onTapGesture { c.window = nil } }
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .center) {
-                        Text(title).font(PanelFont.ui(m.r(1.2), 700)).foregroundStyle(WinStyle.text)
+                    HStack(alignment: .center, spacing: m.r(0.4)) {
+                        Text(title).font(PanelFont.ui(m.r(titleSize), 700)).foregroundStyle(WinStyle.text)
                         Spacer(minLength: m.r(0.5))
+                        if let accessory { accessory }
                         Button(closeLabel) { if let f = onClose { f() } else { c.window = nil } }.buttonStyle(CButton())
                     }
                     .padding(.top, m.r(0.2)).padding(.bottom, m.r(0.4))
                     ScrollView(.vertical) { content.frame(maxWidth: .infinity, alignment: .leading) }
                         .scrollIndicators(.hidden)
                 }
-                .padding(.vertical, m.r(1)).padding(.horizontal, m.r(1.2))
+                .padding(.vertical, m.r(pad.v)).padding(.horizontal, m.r(pad.h))
                 .frame(width: min(m.r(width), g.size.width * 0.94))
                 .frame(maxHeight: g.size.height * 0.9)
                 .fixedSize(horizontal: false, vertical: true)

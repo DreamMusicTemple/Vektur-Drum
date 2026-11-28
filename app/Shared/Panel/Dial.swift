@@ -16,9 +16,13 @@ struct KnobCell: View {
     let text: String                 // the value as the web prints it
     var cellWidth: CGFloat = 3.35    // rem
     var knobSize: CGFloat = 2.3      // rem
+    var modKey: String? = nil        // data-mod-key: a modulation destination (wired ring, live light, pick-to-wire, hold popup)
     let set: (Double) -> Void
+    @Environment(\.drum) private var drum
     @State private var dragStart: Double?
     @State private var lastTap = Date.distantPast
+    @State private var holdTimer: Timer?
+    @State private var held = false
 
     var body: some View {
         let kw = m.r(knobSize), lfs = m.r(0.5), vfs = m.r(0.54)
@@ -28,18 +32,29 @@ struct KnobCell: View {
             InterstellarDial(t: value, colorHex: th.arcHex, dragging: dragStart != nil)
                 .frame(width: kw * 1.22, height: kw * 1.22)     // .kv: 122 % of the knob, centred on it
                 .frame(width: kw, height: kw)
+                .overlay { if let k = modKey, drum?.isWired(k) == true { Circle().stroke(Color(hex: "#ff5ad2", opacity: 0.53), lineWidth: 1).padding(-1) } }   // .kcell.wired
+                .overlay { if let k = modKey, let l = drum?.modLights[k] {   // .kmod: where the modulation has the dial now
+                    Circle().fill(ModColors.color(l.source)).frame(width: 6, height: 6).shadow(color: ModColors.color(l.source), radius: 3)
+                        .offset(y: -(kw / 2 + 1)).rotationEffect(.degrees(l.position * 270 - 135)).allowsHitTesting(false) } }
                 .contentShape(Circle())
-                .highPriorityGesture(DragGesture(minimumDistance: 0)
+                .highPriorityGesture(DragGesture(minimumDistance: 0, coordinateSpace: .named("root"))
                     .onChanged { g in
                         if dragStart == nil {
+                            if let d = drum, let k = modKey, d.modPick >= 0 { let s = d.modPick; d.modPick = -1; d.addWire(source: s, key: k); dragStart = -1; return }
                             let now = Date()
                             if now.timeIntervalSince(lastTap) < 0.3, let d = defaultValue { set(d); lastTap = .distantPast; dragStart = -1; return }
-                            lastTap = now; dragStart = value
+                            lastTap = now; dragStart = value; held = false
+                            if let d = drum, let k = modKey {   // hold still: the modulation popup (web modPopup)
+                                let p = g.location
+                                holdTimer?.invalidate()
+                                holdTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in MainActor.assumeIsolated { held = true; d.modPopup = ModPopupRequest(key: k, point: p) } }
+                            }
                         }
-                        guard let v0 = dragStart, v0 >= 0 else { return }
+                        if abs(g.translation.height) > 4 || abs(g.translation.width) > 4 { holdTimer?.invalidate() }
+                        guard !held, let v0 = dragStart, v0 >= 0 else { return }
                         set(min(1, max(0, v0 - Double(g.translation.height) / 160)))
                     }
-                    .onEnded { _ in dragStart = nil })
+                    .onEnded { _ in dragStart = nil; holdTimer?.invalidate() })
                 .accessibilityElement().accessibilityLabel(label).accessibilityValue(text)
                 .accessibilityAdjustableAction { d in set(min(1, max(0, value + (d == .increment ? 0.01 : -0.01)))) }
             Text(text).font(PanelFont.mono(vfs, 600)).foregroundStyle(Color(hex: "#d8d4c8")).lineLimit(1)
@@ -142,7 +157,8 @@ struct ParamKnob: View {
             let v = c.value(key), lo = spec.range.lowerBound, hi = spec.range.upperBound
             let dflt = ParameterSpec.trackDefault(forKey: key) ?? spec.defaultValue
             KnobCell(label: label, value: spec.normalized(v), centre: lo < 0 && hi > 0 ? spec.normalized(0) : nil,
-                     defaultValue: spec.normalized(dflt), text: format?(v) ?? ParamFormat.text(spec, v), cellWidth: cellWidth, knobSize: knobSize) { t in
+                     defaultValue: spec.normalized(dflt), text: format?(v) ?? ParamFormat.text(spec, v), cellWidth: cellWidth, knobSize: knobSize,
+                     modKey: spec.isModulatable ? key : nil) { t in
                 if let f = setNormalized { f(t) } else { c.set(key, spec.value(atNormalized: t)) }
             }
         }
