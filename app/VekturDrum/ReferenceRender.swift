@@ -14,7 +14,7 @@ enum ReferenceRender {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("ui-native", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         for (name, w) in sizes {
-            let m = PanelMetrics(width: w), th = PanelTheme(c.theme)
+            let m = PanelMetrics(width: w), th = c.panelTheme
             let view = DrumPanel(c: c).frame(width: m.sheetWidth).padding(.top, m.sheetTop).frame(width: w).background(th.chassis[5])
                 .environment(\.panel, m).environment(\.theme, th).environment(\.referenceRender, true).environment(\.drum, c)
             let r = ImageRenderer(content: view); r.scale = 2; r.proposedSize = ProposedViewSize(width: w, height: nil)

@@ -57,6 +57,13 @@ final class DrumController {
     var modLights: [String: ModLight] = [:]
     var modPopup: ModPopupRequest?
     var modGroup = "Slicer"
+    var confirmClearWires = false
+    /// This device's preferences, the standalone app's services, MIDI learn and the last CC (SETTINGS).
+    var prefs = DevicePrefs.load()
+    @ObservationIgnored weak var host: HostServices?
+    var learnKey: String?
+    var lastCC: (cc: Int, ch: Int, v: Int)?
+    var settingsTab = "audio"
     /// The Slicer's playing slice and its action (web paintSlicerLive), −1 = off.
     var slicerLive = -1
     var slicerLiveAction = 0
@@ -90,7 +97,10 @@ final class DrumController {
         RunLoop.main.add(t, forMode: .common); poll = t
     }
     private var gcCount = 0
+    @ObservationIgnored private var tickCount = 0
     private func tick() {
+        tickCount &+= 1
+        if prefs.battery && tickCount % 4 != 0 { return }   // battery saving: the lights at a quarter of the rate
         if let tel = engine.telemetry() {
             if tel.transport != transport { transport = tel.transport }
             if tel.currentPattern != playingPattern { playingPattern = tel.currentPattern }

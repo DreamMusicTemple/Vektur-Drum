@@ -33,12 +33,14 @@ struct PanelTheme {
     let chassisHex: [String]
     let strip: [Color]        // light, mid, dark, lettering                           (STRIPS[k][1…4])
 
-    init(_ t: AppearanceTheme) {
-        led = Color(hex: t.led); ledHex = t.led; ledlo = Color(hex: mixHex(t.led, "#000000", 0.78))
-        cyan = Color(hex: t.display); ice = Color(hex: mixHex(t.display, "#ffffff", 0.6)); arc = Color(hex: t.arc); arcHex = t.arc
-        chassisHex = AppearanceTheme.chassis[t.chassis]?.colors ?? AppearanceTheme.chassis["graphite"]!.colors
+    init(_ t: AppearanceTheme) { self.init(led: t.led, display: t.display, arc: t.arc, chassis: t.chassis, strip: t.strip) }
+    /// web themeOf(): a theme's colours with your own LED / display / arc colours, chassis and strip.
+    init(led l: String, display d: String, arc a: String, chassis c: String, strip s: String) {
+        led = Color(hex: l); ledHex = l; ledlo = Color(hex: mixHex(l, "#000000", 0.78))
+        cyan = Color(hex: d); ice = Color(hex: mixHex(d, "#ffffff", 0.6)); arc = Color(hex: a); arcHex = a
+        chassisHex = AppearanceTheme.chassis[c]?.colors ?? AppearanceTheme.chassis["graphite"]!.colors
         chassis = chassisHex.map { Color(hex: $0) }
-        strip = (AppearanceTheme.strips[t.strip]?.colors ?? AppearanceTheme.strips["alu"]!.colors).map { Color(hex: $0) }
+        strip = (AppearanceTheme.strips[s]?.colors ?? AppearanceTheme.strips["alu"]!.colors).map { Color(hex: $0) }
     }
     static let amber = PanelTheme(AppearanceTheme.all[0])
 }
@@ -51,6 +53,7 @@ struct PanelMetrics {
     var rem: CGFloat { 13 * scale }
     /// fitScale(): on touch screens ≥ 700 pt wide, clamp(width / 1060, 1, 1.35); otherwise 1.
     init(width: CGFloat) { self.width = width; scale = width >= 700 ? min(1.35, max(1, width / 1060)) : 1 }
+    init(width: CGFloat, scale: CGFloat) { self.width = width; self.scale = scale }
     func r(_ v: CGFloat) -> CGFloat { v * rem }   // rem → points
     /// The sheet: width min(80rem, 100vw) (style.css #drumModal.codelab .sheet; measured), .5rem from the top.
     var sheetWidth: CGFloat { min(80 * rem, width) }

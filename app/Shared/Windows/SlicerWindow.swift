@@ -213,16 +213,7 @@ struct SlicerWires: View {
     let c: DrumController
     var body: some View {
         FlowRow(gap: m.r(0.3), rowGap: m.r(0.3)) {
-            ForEach(Array(c.project.wires.enumerated()).filter { $0.element.param.hasPrefix("sl.") }, id: \.offset) { i, w in
-                let col = ModColors.color(w.source.rawValue)
-                HStack(spacing: m.r(0.35)) {
-                    Text("\(w.source.name) → \(ParameterSpec.spec(forKey: w.param)?.name ?? w.param) \(w.amount > 0 ? "+" : "")\(Int((w.amount * 100).rounded()))%")
-                    Button("✕") { c.deleteWire(i) }.buttonStyle(.plain).accessibilityLabel("Delete wire")
-                }
-                .font(PanelFont.ui(m.r(0.66), 500)).foregroundStyle(col)
-                .padding(.vertical, m.r(0.12)).padding(.leading, m.r(0.55)).padding(.trailing, m.r(0.2))
-                .overlay(Capsule().stroke(col, lineWidth: 1))
-            }
+            ForEach(slicerWireIndices, id: \.self) { i in SlicerWireChip(c: c, index: i) }
         }
     }
 }
@@ -230,50 +221,87 @@ struct SlicerWires: View {
 /// .slmetal — METALISE: ON / OFF (hold it to automate), its chance, an old-glitch note, Mix · Grain · Stretch.
 struct MetaliseBox: View {
     @Environment(\.panel) private var m
-    @Environment(\.theme) private var th
     let c: DrumController
-    @State private var holdTimer: Timer?
-    @State private var held = false
     var body: some View {
-        let on = c.value("gl.on") > 0.5, mode = Int(c.value("gl.mode").rounded()), metal = on && mode == 2
-        let chance = c.value("gl.chance")
         VStack(alignment: .leading, spacing: m.r(0.15)) {
-            HStack(spacing: m.r(0.35)) {
-                Text("METALISE").font(.system(size: m.r(0.68), weight: .heavy)).tracking(0.18 * m.r(0.68)).foregroundStyle(th.print).brightness(0.12)
-                    .padding(.leading, m.r(0.4)).overlay(alignment: .leading) { th.led.frame(width: 3) }
-                Button(metal ? "ON" : "OFF") {
-                    if held { held = false; return }
-                    if metal { c.set("gl.on", 0) } else { c.set("gl.mode", 2); c.set("gl.on", 1) }
-                }
-                .buttonStyle(HBStyle(led: .red, on: metal))
-                .overlay { if c.isWired("gl.on") { RoundedRectangle(cornerRadius: m.r(0.32)).stroke(Color(hex: "#3fd7ff", opacity: 0.6), lineWidth: 2).padding(-2) } }
-                .simultaneousGesture(DragGesture(minimumDistance: 0, coordinateSpace: .named("root")).onChanged { g in
-                    if holdTimer == nil {
-                        let p = g.location
-                        holdTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in MainActor.assumeIsolated { held = true; c.modPopup = ModPopupRequest(key: "gl.on", point: p) } }
-                    }
-                }.onEnded { _ in holdTimer?.invalidate(); holdTimer = nil })
-                .accessibilityLabel("Metalise on or off — touch and hold to automate it")
-                if chance > 0 {
-                    Text("\(Int((chance * 100).rounded()))% / \((ParameterSpec.spec(forKey: "gl.chdiv")?.choices ?? [])[safe: Int(c.value("gl.chdiv").rounded())] ?? "")")
-                        .font(.system(size: m.r(0.55), weight: .bold, design: .monospaced)).foregroundStyle(th.cyan)
-                }
-            }
-            if on && mode != 2 {
-                Text("this kit plays the old \(((ParameterSpec.spec(forKey: "gl.mode")?.choices ?? [])[safe: mode] ?? "").uppercased()) glitch — tap OFF→ON for Metalise")
-                    .font(PanelFont.ui(m.r(0.55), 400)).foregroundStyle(Color(hex: "#c98a4a")).frame(maxWidth: m.r(11), alignment: .leading)
-            }
-            HStack(alignment: .top, spacing: m.r(0.05)) {
-                ParamKnob(c: c, key: "gl.mix", label: "Mix", format: Fmt.pct, cellWidth: 3.4)
-                ParamKnob(c: c, key: "gl.size", label: "Grain", format: { t in String(format: t < 0.4 ? "%.1f ms" : "%.0f ms", 3 * pow(20, t)) }, cellWidth: 3.4)
-                ParamKnob(c: c, key: "gl.speed", label: "Stretch", format: { t in "\(Int(((0.25 + 0.75 * t) * 100).rounded()))%" }, cellWidth: 3.4)
-            }
+            MetaliseHeader(c: c)
+            MetaliseOldNote(c: c)
+            MetaliseKnobs(c: c)
         }
         .padding(.top, m.r(0.25)).padding(.horizontal, m.r(0.35)).padding(.bottom, m.r(0.2))
         .background(RoundedRectangle(cornerRadius: m.r(0.45)).fill(Color.black.opacity(0.45)))
         .overlay(RoundedRectangle(cornerRadius: m.r(0.45)).stroke(Color.white.opacity(0.07), lineWidth: 1))
         .padding(.horizontal, m.r(0.2))
     }
+}
+struct MetaliseHeader: View {
+    @Environment(\.panel) private var m
+    @Environment(\.theme) private var th
+    let c: DrumController
+    @State private var holdTimer: Timer?
+    @State private var held = false
+    var body: some View {
+        let metal: Bool = c.value("gl.on") > 0.5 && Int(c.value("gl.mode").rounded()) == 2
+        HStack(spacing: m.r(0.35)) {
+            Text("METALISE").font(.system(size: m.r(0.68), weight: .heavy)).tracking(0.18 * m.r(0.68)).foregroundStyle(th.print).brightness(0.12)
+                .padding(.leading, m.r(0.4)).overlay(alignment: .leading) { th.led.frame(width: 3) }
+            Button(metal ? "ON" : "OFF") { press(metal) }
+                .buttonStyle(HBStyle(led: .red, on: metal))
+                .overlay { if c.isWired("gl.on") { RoundedRectangle(cornerRadius: m.r(0.32)).stroke(Color(hex: "#3fd7ff", opacity: 0.6), lineWidth: 2).padding(-2) } }
+                .simultaneousGesture(holdGesture)
+                .accessibilityLabel("Metalise on or off — touch and hold to automate it")
+            MetaliseChance(c: c)
+        }
+    }
+    private func press(_ metal: Bool) {
+        if held { held = false; return }
+        if metal { c.set("gl.on", 0) } else { c.set("gl.mode", 2); c.set("gl.on", 1) }
+    }
+    private var holdGesture: some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("root")).onChanged { g in
+            guard holdTimer == nil else { return }
+            let p = g.location
+            holdTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in MainActor.assumeIsolated { held = true; c.modPopup = ModPopupRequest(key: "gl.on", point: p) } }
+        }.onEnded { _ in holdTimer?.invalidate(); holdTimer = nil }
+    }
+}
+struct MetaliseChance: View {
+    @Environment(\.panel) private var m
+    @Environment(\.theme) private var th
+    let c: DrumController
+    var body: some View {
+        let chance: Double = c.value("gl.chance")
+        let divs: [String] = ParameterSpec.spec(forKey: "gl.chdiv")?.choices ?? []
+        let div: String = divs[safe: Int(c.value("gl.chdiv").rounded())] ?? ""
+        if chance > 0 {
+            Text(String(Int((chance * 100).rounded())) + "% / " + div).font(.system(size: m.r(0.55), weight: .bold, design: .monospaced)).foregroundStyle(th.cyan)
+        }
+    }
+}
+struct MetaliseOldNote: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    var body: some View {
+        let mode: Int = Int(c.value("gl.mode").rounded())
+        let modes: [String] = ParameterSpec.spec(forKey: "gl.mode")?.choices ?? []
+        if c.value("gl.on") > 0.5 && mode != 2 {
+            Text("this kit plays the old " + (modes[safe: mode] ?? "").uppercased() + " glitch — tap OFF→ON for Metalise")
+                .font(PanelFont.ui(m.r(0.55), 400)).foregroundStyle(Color(hex: "#c98a4a")).frame(maxWidth: m.r(11), alignment: .leading)
+        }
+    }
+}
+struct MetaliseKnobs: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    var body: some View {
+        HStack(alignment: .top, spacing: m.r(0.05)) {
+            ParamKnob(c: c, key: "gl.mix", label: "Mix", format: Fmt.pct, cellWidth: 3.4)
+            ParamKnob(c: c, key: "gl.size", label: "Grain", format: Self.grain, cellWidth: 3.4)
+            ParamKnob(c: c, key: "gl.speed", label: "Stretch", format: Self.stretch, cellWidth: 3.4)
+        }
+    }
+    static func grain(_ t: Double) -> String { String(format: t < 0.4 ? "%.1f ms" : "%.0f ms", 3 * pow(20, t)) }
+    static func stretch(_ t: Double) -> String { "\(Int(((0.25 + 0.75 * t) * 100).rounded()))%" }
 }
 
 extension DrumController {
@@ -331,5 +359,28 @@ extension DrumController {
         let v = project.patterns[p].slicer
         let n: Bool? = v == nil ? true : v! ? false : nil
         edit { $0.patterns[p].slicer = n }; engine.send(.setPatternSlicer(pattern: p, n))
+    }
+}
+
+extension SlicerWires {
+    var slicerWireIndices: [Int] { c.project.wires.indices.filter { c.project.wires[$0].param.hasPrefix("sl.") } }
+}
+struct SlicerWireChip: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    let index: Int
+    var body: some View {
+        let w = c.project.wires[index]
+        let col: Color = ModColors.color(w.source.rawValue)
+        let pct: Int = Int((w.amount * 100).rounded())
+        let name: String = ParameterSpec.spec(forKey: w.param)?.name ?? w.param
+        let label: String = w.source.name + " → " + name + " " + (w.amount > 0 ? "+" : "") + String(pct) + "%"
+        HStack(spacing: m.r(0.35)) {
+            Text(label)
+            Button("✕") { c.deleteWire(index) }.buttonStyle(.plain).accessibilityLabel("Delete wire")
+        }
+        .font(PanelFont.ui(m.r(0.66), 500)).foregroundStyle(col)
+        .padding(.vertical, m.r(0.12)).padding(.leading, m.r(0.55)).padding(.trailing, m.r(0.2))
+        .overlay(Capsule().stroke(col, lineWidth: 1))
     }
 }

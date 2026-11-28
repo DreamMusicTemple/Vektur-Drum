@@ -9,7 +9,7 @@ struct PanelRoot: View {
     let controller: DrumController
     var body: some View {
         GeometryReader { geo in
-            let m = PanelMetrics(width: geo.size.width), th = PanelTheme(controller.theme)
+            let m = PanelMetrics(width: geo.size.width), th = controller.panelTheme
             ScrollView(.vertical) {
                 DrumPanel(c: controller)
                     .frame(width: m.sheetWidth)
@@ -501,6 +501,7 @@ struct StepKeys: View {
 struct StepKey: View {
     @Environment(\.panel) private var m
     @Environment(\.theme) private var th
+    @Environment(\.drum) private var drum
     let step: Step?
     let playhead: Bool
     let outside: Bool
@@ -512,8 +513,9 @@ struct StepKey: View {
     @State private var held = false
     @State private var timer: Timer?
     var body: some View {
-        let r = m.r(0.25), on = step != nil, acc = (step?.velocity ?? 0) >= 0.9
+        let r = m.r(0.25), on = step != nil, acc = (step?.velocity ?? 0) >= 0.9, design = drum?.prefs.steps ?? "classic"
         StepKeyStyle.Body(radius: r, playhead: playhead, down: down) { Color.clear.frame(maxWidth: .infinity).frame(height: m.r(2.4) - 2) }
+            .overlay { if design != "classic" { StepFace(design: design, on: on, accent: acc, playhead: playhead, muted: muted, radius: r).padding(-1).allowsHitTesting(false) } }
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0)   // web stepEvents: hold 380 ms selects; a tap switches (or selects with EDIT)
                 .onChanged { g in
@@ -526,7 +528,7 @@ struct StepKey: View {
                 })
             .accessibilityElement().accessibilityAddTraits(.isButton).accessibilityAction { tap() }
             .overlay(alignment: .top) {   // ::before — the LED bar
-                GeometryReader { g in
+                if design == "classic" { GeometryReader { g in
                     let bar = RoundedRectangle(cornerRadius: m.r(0.16))
                     Group {
                         if playhead { bar.fill(Color(hex: "#fff3df")).shadow(color: Color(255, 240, 210, 0.8), radius: 3) }
@@ -539,7 +541,7 @@ struct StepKey: View {
                     .frame(width: g.size.width * 0.56, height: m.r(0.32))
                     .position(x: g.size.width / 2, y: m.r(0.3) + m.r(0.16))
                 }
-                .allowsHitTesting(false)
+                .allowsHitTesting(false) }
             }
             .overlay(alignment: .bottom) {   // em — ×ratchet, ±pitch, chance %, FM ratio
                 if let mk = mark { Text(mk).font(PanelFont.mono(m.r(0.5), 600)).foregroundStyle(Color(hex: "#8b8f96")).lineLimit(1).padding(.bottom, m.r(0.22)).allowsHitTesting(false) }

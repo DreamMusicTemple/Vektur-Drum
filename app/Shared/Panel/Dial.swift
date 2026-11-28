@@ -29,7 +29,7 @@ struct KnobCell: View {
         VStack(spacing: m.r(0.05)) {
             Text(label.uppercased()).font(PanelFont.ui(lfs, 400)).letterSpacing(0.08, size: lfs).foregroundStyle(Color(hex: "#9a9ea6"))
                 .lineLimit(1).truncationMode(.tail)
-            InterstellarDial(t: value, colorHex: th.arcHex, dragging: dragStart != nil)
+            DialArt(style: drum?.prefs.dial ?? AppearanceTheme.defaultDialStyle, t: value, centre: centre, colorHex: th.arcHex, ledHex: th.ledHex, dragging: dragStart != nil)
                 .frame(width: kw * 1.22, height: kw * 1.22)     // .kv: 122 % of the knob, centred on it
                 .frame(width: kw, height: kw)
                 .overlay { if let k = modKey, drum?.isWired(k) == true { Circle().stroke(Color(hex: "#ff5ad2", opacity: 0.53), lineWidth: 1).padding(-1) } }   // .kcell.wired
