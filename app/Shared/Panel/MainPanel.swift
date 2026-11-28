@@ -323,7 +323,7 @@ struct TrackRow: View {
         SeqGrid(rem: m.rem) {
             Button { c.selectedTrack = t } label: {   // .hb.dmname
                 VStack(alignment: .leading, spacing: m.r(0.08)) {
-                    Text(c.trackName(t))
+                    Text(c.trackName(t)).lineLimit(2).lineSpacing(0).fixedSize(horizontal: false, vertical: true)   // wraps like the web ("FM / CLASSIC")
                     Text("TRACK \(n)").font(PanelFont.ui(m.r(0.5), 700)).letterSpacing(0.1, size: m.r(0.5)).foregroundStyle(th.print)
                 }
             }

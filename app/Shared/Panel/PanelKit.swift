@@ -28,7 +28,7 @@ struct HBStyle: ButtonStyle {
         let down = configuration.isPressed, radius = m.r(0.32)
         return configuration.label
             .font(PanelFont.ui(fs, 700)).letterSpacing(letterSpacing, size: fs)
-            .foregroundStyle(Color(hex: "#d9d6cd")).lineLimit(1)
+            .foregroundStyle(Color(hex: "#d9d6cd"))
             .padding(.horizontal, px)
             .frame(minWidth: minW - 2, maxWidth: fill ? .infinity : nil, minHeight: h - 2, maxHeight: h - 2, alignment: alignment)
             .background {
