@@ -50,8 +50,9 @@ struct PanelMetrics {
     /// fitScale(): on touch screens ≥ 700 pt wide, clamp(width / 1060, 1, 1.35); otherwise 1.
     init(width: CGFloat) { self.width = width; scale = width >= 700 ? min(1.35, max(1, width / 1060)) : 1 }
     func r(_ v: CGFloat) -> CGFloat { v * rem }   // rem → points
-    /// The sheet: width min(80rem, 99.5vw).
-    var sheetWidth: CGFloat { min(80 * rem, width * 0.995) }
+    /// The sheet: width min(80rem, 100vw) (style.css #drumModal.codelab .sheet; measured), .5rem from the top.
+    var sheetWidth: CGFloat { min(80 * rem, width) }
+    var sheetTop: CGFloat { 0.5 * rem }
 }
 
 private struct PanelMetricsKey: EnvironmentKey { static let defaultValue = PanelMetrics(width: 1194) }

@@ -12,7 +12,7 @@ struct PanelRoot: View {
             ScrollView(.vertical) {
                 DrumPanel(c: controller)
                     .frame(width: m.sheetWidth)
-                    .padding(.top, 7)
+                    .padding(.top, m.sheetTop)
                     .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.hidden)
@@ -42,15 +42,18 @@ struct DrumPanel: View {
             SequencerSection(c: c)
         }
         .padding(.top, m.r(0.55)).padding(.horizontal, m.r(0.65)).padding(.bottom, m.r(0.7))
+        .padding(1)   // border:1px #000 (inside the box)
         .background {
-            ZStack {
-                LinearGradient(stops: [.init(color: th.chassis[0], location: 0), .init(color: th.chassis[1], location: min(1, m.r(0.5) / 1100)),
-                                       .init(color: th.chassis[2], location: 1)], startPoint: .top, endPoint: .bottom)
-                VStack(spacing: 0) { Color.white.opacity(0.14).frame(height: 1); Spacer(minLength: 0); Color.black.opacity(0.6).frame(height: 2) }
+            GeometryReader { g in   // c1 → c2 at .5rem (absolute) → c3 at the bottom
+                ZStack {
+                    LinearGradient(stops: [.init(color: th.chassis[0], location: 0), .init(color: th.chassis[1], location: min(1, m.r(0.5) / max(g.size.height, 1))),
+                                           .init(color: th.chassis[2], location: 1)], startPoint: .top, endPoint: .bottom)
+                    VStack(spacing: 0) { Color.white.opacity(0.14).frame(height: 1); Spacer(minLength: 0); Color.black.opacity(0.6).frame(height: 2) }.padding(1)
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: radius))
         }
-        .overlay(RoundedRectangle(cornerRadius: radius).stroke(Color.black, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Color.black, lineWidth: 1))
     }
 }
 
@@ -138,7 +141,7 @@ struct DisplaySection: View {
     @Environment(\.theme) private var th
     let c: DrumController
     var body: some View {
-        PanelSection(title: "DISPLAY") { OledView(lines: lines) }
+        PanelSection(title: "DISPLAY", zone: .ctl) { OledView(lines: lines) }
     }
     /// web paintOled()
     private var lines: [Text] {
