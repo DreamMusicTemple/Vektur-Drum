@@ -255,24 +255,12 @@ struct BLSliceRow: View {
     let t: Int
     let sx: SampleSlices
     @Binding var st: BLState
-    static let stutLens: [(Double, String)] = [(1.0 / 32, "1/128"), (1.0 / 16, "1/64"), (0.125, "1/32"), (0.25, "1/16"), (0.5, "1/8"), (1, "1/4")]
     var body: some View {
         FlowRow(gap: m.r(0.05), rowGap: m.r(0.3), alignment: .bottom) {
             if let s = sx.slices[safe: st.sel] {
-                let set = { (f: (inout SliceSettings) -> Void) in var x = sx; f(&x.slices[st.sel]); c.setSlices(t, x) }
-                ValueKnob(label: "Pitch", value: s.pitch, range: -24...24, defaultValue: 0, step: 1, bipolar: true, format: { ($0 > 0 ? "+" : "") + "\(Int($0.rounded())) st" }) { v in set { $0.pitch = v.rounded() } }
-                ValueKnob(label: "Gain", value: s.gain, range: 0...2, defaultValue: 1, format: { $0 <= 0 ? "−∞" : String(format: "%.1f dB", 20 * log10($0)) }) { v in set { $0.gain = v } }
-                ValueKnob(label: "Pan", value: s.pan, range: -1...1, defaultValue: 0, bipolar: true, format: { abs($0) < 0.03 ? "C" : ($0 < 0 ? "L" : "R") + "\(Int((abs($0) * 100).rounded()))" }) { v in set { $0.pan = abs(v) < 0.03 ? 0 : v } }
-                ValueKnob(label: "Attack", value: s.attackMs, range: 0...50, defaultValue: 0, format: { $0 <= 0 ? "HARD" : String(format: "%.1f ms", $0) }) { v in set { $0.attackMs = (v * 2).rounded() / 2 } }
-                ValueKnob(label: "Gate", value: s.gate, range: 0.02...1, defaultValue: 1, format: { $0 >= 0.995 ? "FULL" : Fmt.pct($0) }) { v in set { $0.gate = v } }
-                ValueKnob(label: "Stretch", value: s.stretch, range: 0.25...4, defaultValue: 1, format: { String(format: "%.2f×", $0) }) { v in set { $0.stretch = (v * 100).rounded() / 100 } }
-                ValueKnob(label: "Stutter", value: Double(s.stutter), range: 0...8, defaultValue: 0, step: 1, format: { Int($0.rounded()) > 0 ? "×\(Int($0.rounded()))" : "OFF" }) { v in set { $0.stutter = Int(v.rounded()) } }
-                ValueKnob(label: "Stut len", value: Double(Self.stutLens.firstIndex { abs($0.0 - s.stutterBeats) < 1e-6 } ?? 2), range: 0...5, defaultValue: 2, step: 1,
-                          format: { Self.stutLens[min(5, max(0, Int($0.rounded())))].1 }) { v in set { $0.stutterBeats = Self.stutLens[min(5, max(0, Int(v.rounded())))].0 } }
-                ValueKnob(label: "Metalise", value: max(-0.02, s.metalise), range: -0.02...1, defaultValue: -0.02, format: { $0 < 0.005 ? "TRACK" : Fmt.pct($0) }) { v in set { $0.metalise = v < 0.005 ? -1 : v } }
-                Button("REVERSE") { set { $0.reverse.toggle() } }.buttonStyle(HBStyle(led: .cyan, on: s.reverse))
-                PanelSelect(options: HitClass.allCases.map(\.name), selected: s.hit.rawValue, label: "Slice type") { i in set { $0.hit = HitClass(rawValue: i) ?? .other } }
-                Button("▶ AUDITION") { c.hitSlice(t, st.sel, velocity127: 110) }.buttonStyle(HBStyle())
+                BLSliceKnobsA(c: c, t: t, sx: sx, sel: st.sel, s: s)
+                BLSliceKnobsB(c: c, t: t, sx: sx, sel: st.sel, s: s)
+                BLSliceButtons(c: c, t: t, sx: sx, sel: st.sel, s: s)
             } else {
                 PanelNote(text: "No slices yet — DETECT, then SLICE (or pick Equal / Beat / Bar / Grid).", maxWidth: nil)
             }
@@ -281,6 +269,78 @@ struct BLSliceRow: View {
         .overlay(alignment: .topLeading) { TinyLabel(text: sx.slices.isEmpty ? "SLICE" : "SLICE \(st.sel + 1)").padding(.top, m.r(0.12)).padding(.leading, m.r(0.1)) }
         .overlay(alignment: .top) { Color(hex: "#2a2d32").frame(height: 1) }
         .padding(.vertical, m.r(0.35))
+    }
+}
+/// Writes one slice setting and hands the slices to the engine.
+struct BLSliceEdit {
+    let c: DrumController
+    let t: Int
+    let sx: SampleSlices
+    let sel: Int
+    func callAsFunction(_ f: (inout SliceSettings) -> Void) { var x = sx; f(&x.slices[sel]); c.setSlices(t, x) }
+}
+enum BLFmt {
+    static func st(_ v: Double) -> String { (v > 0 ? "+" : "") + "\(Int(v.rounded())) st" }
+    static func gain(_ v: Double) -> String { v <= 0 ? "−∞" : String(format: "%.1f dB", 20 * log10(v)) }
+    static func pan(_ v: Double) -> String { abs(v) < 0.03 ? "C" : (v < 0 ? "L" : "R") + "\(Int((abs(v) * 100).rounded()))" }
+    static func attack(_ v: Double) -> String { v <= 0 ? "HARD" : String(format: "%.1f ms", v) }
+    static func gate(_ v: Double) -> String { v >= 0.995 ? "FULL" : Fmt.pct(v) }
+    static func stretch(_ v: Double) -> String { String(format: "%.2f×", v) }
+    static func stutter(_ v: Double) -> String { Int(v.rounded()) > 0 ? "×\(Int(v.rounded()))" : "OFF" }
+    static func stutLen(_ v: Double) -> String { stutLens[min(5, max(0, Int(v.rounded())))].1 }
+    static func metal(_ v: Double) -> String { v < 0.005 ? "TRACK" : Fmt.pct(v) }
+    static let stutLens: [(Double, String)] = [(1.0 / 32, "1/128"), (1.0 / 16, "1/64"), (0.125, "1/32"), (0.25, "1/16"), (0.5, "1/8"), (1, "1/4")]
+}
+struct BLSliceKnobsA: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    let t: Int
+    let sx: SampleSlices
+    let sel: Int
+    let s: SliceSettings
+    var body: some View {
+        let set = BLSliceEdit(c: c, t: t, sx: sx, sel: sel)
+        HStack(alignment: .top, spacing: m.r(0.05)) {
+            ValueKnob(label: "Pitch", value: s.pitch, range: -24...24, defaultValue: 0, step: 1, bipolar: true, format: BLFmt.st) { v in set { $0.pitch = v.rounded() } }
+            ValueKnob(label: "Gain", value: s.gain, range: 0...2, defaultValue: 1, format: BLFmt.gain) { v in set { $0.gain = v } }
+            ValueKnob(label: "Pan", value: s.pan, range: -1...1, defaultValue: 0, bipolar: true, format: BLFmt.pan) { v in set { $0.pan = abs(v) < 0.03 ? 0 : v } }
+            ValueKnob(label: "Attack", value: s.attackMs, range: 0...50, defaultValue: 0, format: BLFmt.attack) { v in set { $0.attackMs = (v * 2).rounded() / 2 } }
+            ValueKnob(label: "Gate", value: s.gate, range: 0.02...1, defaultValue: 1, format: BLFmt.gate) { v in set { $0.gate = v } }
+        }
+    }
+}
+struct BLSliceKnobsB: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    let t: Int
+    let sx: SampleSlices
+    let sel: Int
+    let s: SliceSettings
+    var body: some View {
+        let set = BLSliceEdit(c: c, t: t, sx: sx, sel: sel)
+        let lenIndex: Double = Double(BLFmt.stutLens.firstIndex { abs($0.0 - s.stutterBeats) < 1e-6 } ?? 2)
+        HStack(alignment: .top, spacing: m.r(0.05)) {
+            ValueKnob(label: "Stretch", value: s.stretch, range: 0.25...4, defaultValue: 1, format: BLFmt.stretch) { v in set { $0.stretch = (v * 100).rounded() / 100 } }
+            ValueKnob(label: "Stutter", value: Double(s.stutter), range: 0...8, defaultValue: 0, step: 1, format: BLFmt.stutter) { v in set { $0.stutter = Int(v.rounded()) } }
+            ValueKnob(label: "Stut len", value: lenIndex, range: 0...5, defaultValue: 2, step: 1, format: BLFmt.stutLen) { v in set { $0.stutterBeats = BLFmt.stutLens[min(5, max(0, Int(v.rounded())))].0 } }
+            ValueKnob(label: "Metalise", value: max(-0.02, s.metalise), range: -0.02...1, defaultValue: -0.02, format: BLFmt.metal) { v in set { $0.metalise = v < 0.005 ? -1 : v } }
+        }
+    }
+}
+struct BLSliceButtons: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    let t: Int
+    let sx: SampleSlices
+    let sel: Int
+    let s: SliceSettings
+    var body: some View {
+        let set = BLSliceEdit(c: c, t: t, sx: sx, sel: sel)
+        HStack(spacing: m.r(0.25)) {
+            Button("REVERSE") { set { $0.reverse.toggle() } }.buttonStyle(HBStyle(led: .cyan, on: s.reverse))
+            PanelSelect(options: HitClass.allCases.map(\.name), selected: s.hit.rawValue, label: "Slice type") { i in set { $0.hit = HitClass(rawValue: i) ?? .other } }
+            Button("▶ AUDITION") { c.hitSlice(t, sel, velocity127: 110) }.buttonStyle(HBStyle())
+        }
     }
 }
 
