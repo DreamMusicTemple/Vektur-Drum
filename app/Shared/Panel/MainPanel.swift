@@ -265,7 +265,7 @@ struct SequencerSection: View {
     var body: some View {
         let sel = c.project.selectedPattern
         PanelSection(title: "SEQUENCER", extra: "PATTERN \(sel + 1)", zone: .seq) {
-            HScroller(minContentWidth: m.r(44)) {
+            HScroller(minContentWidth: m.r(44), clipOutset: m.r(0.4)) {
             VStack(alignment: .leading, spacing: 0) {
                 SeqGrid(rem: m.rem) {
                     let fs = m.r(0.5)
@@ -293,12 +293,13 @@ struct SequencerSection: View {
 /// (Hand-made rather than a ScrollView so the reference renders show it too.)
 struct HScroller<Content: View>: View {
     var minContentWidth: CGFloat
+    var clipOutset: CGFloat = 0
     @ViewBuilder var content: Content
     @State private var x: CGFloat = 0
     @State private var x0: CGFloat?
     var body: some View {
         MinWidthPan(minWidth: minContentWidth, offset: x) { content }
-            .clipped()
+            .padding(.horizontal, clipOutset).clipped().padding(.horizontal, -clipOutset)
             .contentShape(Rectangle())
             .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { g in
                 if x0 == nil { x0 = x }
@@ -356,26 +357,61 @@ struct TrackRow: View {
         let muted = c.value("t\(n).mute") > 0.5, solo = c.value("t\(n).solo") > 0.5
         SeqGrid(rem: m.rem) {
             Button { c.selectedTrack = t } label: {   // .hb.dmname
-                VStack(alignment: .leading, spacing: m.r(0.08)) {
-                    Text(c.trackName(t)).lineLimit(2).lineSpacing(0).fixedSize(horizontal: false, vertical: true)   // wraps like the web ("FM / CLASSIC")
+                VStack(alignment: .leading, spacing: m.r(0.08)) {   // .dmname: column, gap .08rem, line-height 1
+                    NameLines(name: c.trackName(t), size: m.r(0.58), width: m.r(5.2) - 2 * m.r(0.45) - 2)
                     Text("TRACK \(n)").font(PanelFont.ui(m.r(0.5), 700)).letterSpacing(0.1, size: m.r(0.5)).foregroundStyle(th.print)
+                        .frame(height: m.r(0.5))
                 }
             }
             .buttonStyle(HBStyle(size: .normal, minWidth: 5.2, paddingX: 0.45, led: .amber, on: false, selected: t == c.selectedTrack, alignment: .leading))
             Button("M") { c.set("t\(n).mute", muted ? 0 : 1) }.buttonStyle(HBStyle(led: .amber, on: muted))
             Button("S") { c.set("t\(n).solo", solo ? 0 : 1) }.buttonStyle(HBStyle(led: .cyan, on: solo))
             StepKeys(c: c, t: t, steps: tp.steps, length: tp.length, muted: muted)
-            HStack(spacing: m.r(0.15)) {   // .dmlen
+            HStack(spacing: m.r(0.15)) {   // .dmlen — the display shrinks to the space left (min-width:0)
                 Button("−") {}.buttonStyle(HBStyle())
-                OledView(lines: [Text(String(format: "%02d", tp.length))], padV: 0.15, padH: 0.3, center: true).frame(width: m.r(1.9))
+                OledView(lines: [Text(String(format: "%02d", tp.length))], padV: 0.15, padH: 0.3, center: true).frame(maxWidth: m.r(1.9))
                 Button("+") {}.buttonStyle(HBStyle())
             }
-            Text(tp.division.label)   // .oled select
-                .font(PanelFont.mono(m.r(0.68), 600)).foregroundStyle(th.cyan).lineLimit(1)
-                .padding(.horizontal, m.r(0.3)).frame(maxWidth: .infinity, minHeight: m.r(1.6), alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: m.r(0.2)).fill(Color(hex: "#030506")))
-                .overlay(RoundedRectangle(cornerRadius: m.r(0.2)).stroke(Color(hex: "#1d2a30"), lineWidth: 1))
+            DivisionCell(label: tp.division.label)
         }
+    }
+}
+
+/// .dmname text: line-height 1; a two-word name too wide for the key wraps onto a second line, as in the web.
+struct NameLines: View {
+    let name: String
+    let size: CGFloat
+    let width: CGFloat
+    var body: some View {
+        let words = name.split(separator: " ").map(String.init)
+        ViewThatFits(in: .horizontal) {
+            Text(name).font(PanelFont.ui(size, 700)).letterSpacing(0.14, size: size).lineLimit(1).frame(height: size)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(words.indices, id: \.self) { Text(words[$0]).font(PanelFont.ui(size, 700)).letterSpacing(0.14, size: size).lineLimit(1).frame(height: size) }
+            }
+        }
+        .frame(maxWidth: width, alignment: .leading)
+    }
+}
+
+/// .dmdiv: an .oled panel (min-width 13rem, so it runs past its 4.2rem column and is clipped by the section) holding
+/// the division select (#030506, 1px #1d2a30 border, radius .2rem, height 1.6rem, .68rem).
+struct DivisionCell: View {
+    @Environment(\.panel) private var m
+    @Environment(\.theme) private var th
+    let label: String
+    var body: some View {
+        let inset: CGFloat = 2.4 / 14.638   // measured: the select sits .164rem inside the panel
+        Text(label).font(PanelFont.mono(m.r(0.68), 600)).foregroundStyle(th.cyan).lineLimit(1)
+            .padding(.leading, m.r(0.35))
+            .frame(width: m.r(13) - 2 * m.r(inset), height: m.r(1.6), alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: m.r(0.2)).fill(Color(hex: "#030506")))
+            .overlay(RoundedRectangle(cornerRadius: m.r(0.2)).stroke(Color(hex: "#1d2a30"), lineWidth: 1))
+            .padding(m.r(inset))
+            .background { ZStack { Color(hex: "#030506"); RoundedRectangle(cornerRadius: m.r(0.3)).stroke(Color.black.opacity(0.95), lineWidth: 5).blur(radius: 2.5).offset(y: 2) }
+                .clipShape(RoundedRectangle(cornerRadius: m.r(0.3))) }
+            .overlay(RoundedRectangle(cornerRadius: m.r(0.3)).stroke(Color.black, lineWidth: 1))
+            .frame(width: m.r(4.2), alignment: .leading)   // laid out in its column, drawn past it
     }
 }
 
