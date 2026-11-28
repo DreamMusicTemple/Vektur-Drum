@@ -21,7 +21,9 @@ struct FlowRow: Layout {
     private func lines(_ sub: Subviews, width: CGFloat) -> [Line] {
         var out: [Line] = [], cur = Line()
         for i in sub.indices {
-            if sub[i][LineBreakKey.self] { if !cur.items.isEmpty { out.append(cur); cur = Line() }; continue }
+            if sub[i][LineBreakKey.self] {   // flex-basis:100%;height:0 — an empty line of its own (so two row gaps)
+                if !cur.items.isEmpty { out.append(cur) }; out.append(Line()); cur = Line(); continue
+            }
             let w = sub[i].sizeThatFits(.unspecified).width
             let add = (cur.items.isEmpty ? 0 : gap) + w
             if !cur.items.isEmpty && cur.width + add > width + 0.5 { out.append(cur); cur = Line() }

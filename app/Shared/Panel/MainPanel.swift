@@ -231,7 +231,7 @@ struct ChainStrip: View {
             }
         }
         .padding(.vertical, m.r(0.18)).padding(.horizontal, m.r(0.3))
-        .frame(minWidth: m.r(7), minHeight: m.r(1.75), alignment: .leading)
+        .frame(minWidth: m.r(7), maxWidth: .infinity, minHeight: m.r(1.75), alignment: .leading)   // flex:1
         .background(RoundedRectangle(cornerRadius: m.r(0.35)).fill(Color(hex: "#07080a"))
             .overlay(RoundedRectangle(cornerRadius: m.r(0.35)).stroke(Color.black.opacity(0.9), lineWidth: 3).blur(radius: 1.5).offset(y: 1)
                 .clipShape(RoundedRectangle(cornerRadius: m.r(0.35)))))
