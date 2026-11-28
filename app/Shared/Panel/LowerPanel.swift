@@ -359,23 +359,8 @@ struct StepEditor: View {
     var body: some View {
         let st = c.selectedStepValue, v = st ?? Step(), eng = c.engineKind(t)
         VStack(alignment: .leading, spacing: 0) {
-            FlowRow(gap: m.r(0.05), rowGap: m.r(0.1), alignment: .top) {
-                ValueKnob(label: "Velocity", value: Double(v.velocity), range: 0...1, defaultValue: 0.8, format: { "\(Int(($0 * 127).rounded()))" }) { x in c.updateStep { $0.velocity = Float(x) } }
-                ValueKnob(label: "Pan", value: Double(v.pan), range: -1...1, defaultValue: 0, format: { abs($0) < 0.03 ? "C" : ($0 < 0 ? "L" : "R") + "\(Int((abs($0) * 100).rounded()))" }) { x in c.updateStep { $0.pan = Float(abs(x) < 0.03 ? 0 : x) } }
-                ValueKnob(label: "Pitch", value: Double(v.pitch), range: -12...12, defaultValue: 0, step: 1, format: { ($0 > 0 ? "+" : "") + "\(Int($0.rounded())) st" }) { x in c.updateStep { $0.pitch = Int8(x.rounded()) } }
-            }
-            FlowRow(gap: m.r(0.05), rowGap: m.r(0.1), alignment: .top) {
-                ValueKnob(label: "Crush", value: Double(v.crush), range: 0...1, defaultValue: 0, format: { $0 <= 0 ? "OFF" : "\(16 - Int(($0 * 14).rounded())) bit" }) { x in c.updateStep { $0.crush = Float(x < 0.02 ? 0 : x) } }
-                ValueKnob(label: "Delay", value: Double(v.delaySend), range: 0...1, defaultValue: 0, format: { "\(Int(($0 * 100).rounded()))" }) { x in c.updateStep { $0.delaySend = Float(x < 0.01 ? 0 : x) } }
-                ValueKnob(label: "Reverb", value: Double(v.reverbSend), range: 0...1, defaultValue: 0, format: { "\(Int(($0 * 100).rounded()))" }) { x in c.updateStep { $0.reverbSend = Float(x < 0.01 ? 0 : x) } }
-                ValueKnob(label: "Fold", value: Double(v.fold), range: 0...1, defaultValue: 0, format: Fmt.pctOff) { x in c.updateStep { $0.fold = Float(x < 0.01 ? 0 : x) } }
-                ValueKnob(label: "Chance", value: Double(v.chance), range: 0...1, defaultValue: 1, format: Fmt.pct) { x in c.updateStep { $0.chance = Float(x > 0.99 ? 1 : x) } }
-                if eng == 2 {   // the step's own FM ratio (0 = the track's)
-                    let r = Double(v.fmRatio), k = r > 0 ? log(r / 0.25) / log(64) : 0
-                    ValueKnob(label: "FM ratio", value: k, range: 0...1, defaultValue: 0, format: { $0 < 0.02 ? "TRACK" : String(format: "%.2f", 0.25 * pow(64, $0)) }) { x in
-                        c.updateStep { $0.fmRatio = x < 0.02 ? 0 : Float((0.25 * pow(64, x) * 100).rounded() / 100) } }
-                }
-            }
+            StepKnobsA(c: c, v: v)
+            StepKnobsB(c: c, v: v, eng: eng)
             StepExtras(c: c, v: v, eng: eng, t: t).padding(.top, m.r(0.2))
             HStack(spacing: m.r(0.2)) {   // .dmrat
                 let fs = m.r(0.58)
@@ -407,7 +392,7 @@ struct StepExtras: View {
         let ns = c.project.tracks[t].slices?.slices.count ?? 0
         FlowRow(gap: m.r(0.4), rowGap: m.r(0.4), alignment: .top) {
             StepGroup(title: "PITCH SHIFT") {
-                ValueKnob(label: "Shift", value: Double(v.shiftSemitones), range: -24...24, defaultValue: 0, bipolar: true, format: { abs($0) < 0.25 ? "OFF" : ($0 > 0 ? "+" : "") + String(format: "%.1f st", $0) }) { x in
+                ValueKnob(label: "Shift", value: Double(v.shiftSemitones), range: -24...24, defaultValue: 0, bipolar: true, format: StepFmt.shift) { x in
                     c.updateStep { $0.shiftSemitones = Float(abs(x) < 0.25 ? 0 : (x * 2).rounded() / 2) } }
                 ValueKnob(label: "Mix", value: Double(v.shiftMix), range: 0...1, defaultValue: 1, format: Fmt.pct) { x in c.updateStep { $0.shiftMix = Float(x) } }
             }
@@ -417,11 +402,11 @@ struct StepExtras: View {
                 ValueKnob(label: "Mix", value: Double(v.spectralMix), range: 0...1, defaultValue: 1, format: Fmt.pct) { x in c.updateStep { $0.spectralMix = Float(x) } }
             }
             StepGroup(title: "SAMPLER") {
-                ValueKnob(label: "Metalise", value: max(-0.02, Double(v.metalise)), range: -0.02...1, defaultValue: -0.02, format: { $0 < 0.005 ? "TRACK" : Fmt.pct($0) }) { x in
+                ValueKnob(label: "Metalise", value: max(-0.02, Double(v.metalise)), range: -0.02...1, defaultValue: -0.02, format: StepFmt.metal) { x in
                     c.updateStep { $0.metalise = Float(x < 0.005 ? -1 : x) } }
                 if eng == 1 {
                     let top = Double(max(1, ns))
-                    ValueKnob(label: "Slice", value: min(Double(v.slice), top), range: 0...top, defaultValue: 0, step: 1, format: { Int($0.rounded()) > 0 ? "S\(Int($0.rounded()))" : "TRACK" }) { x in c.updateStep { $0.slice = UInt8(x.rounded()) } }
+                    ValueKnob(label: "Slice", value: min(Double(v.slice), top), range: 0...top, defaultValue: 0, step: 1, format: StepFmt.slice) { x in c.updateStep { $0.slice = UInt8(x.rounded()) } }
                     ValueKnob(label: "Rev %", value: Double(v.reverseChance), range: 0...1, defaultValue: 0, format: Fmt.pct) { x in c.updateStep { $0.reverseChance = Float(x < 0.01 ? 0 : x) } }
                     ValueKnob(label: "Stut %", value: Double(v.stutterChance), range: 0...1, defaultValue: 0, format: Fmt.pct) { x in c.updateStep { $0.stutterChance = Float(x < 0.01 ? 0 : x) } }
                 }
@@ -704,5 +689,49 @@ extension DrumController {
         default: f = { _ in 0 }
         }
         setLfoShape(lfo, (0..<16).map { (min(1, max(-1, f($0))) * 100).rounded() / 100 })
+    }
+}
+
+enum StepFmt {
+    static func vel(_ v: Double) -> String { "\(Int((v * 127).rounded()))" }
+    static func pan(_ v: Double) -> String { abs(v) < 0.03 ? "C" : (v < 0 ? "L" : "R") + "\(Int((abs(v) * 100).rounded()))" }
+    static func pitch(_ v: Double) -> String { (v > 0 ? "+" : "") + "\(Int(v.rounded())) st" }
+    static func crush(_ v: Double) -> String { v <= 0 ? "OFF" : "\(16 - Int((v * 14).rounded())) bit" }
+    static func send(_ v: Double) -> String { "\(Int((v * 100).rounded()))" }
+    static func fmRatio(_ v: Double) -> String { v < 0.02 ? "TRACK" : String(format: "%.2f", 0.25 * pow(64, v)) }
+    static func shift(_ v: Double) -> String { abs(v) < 0.25 ? "OFF" : (v > 0 ? "+" : "") + String(format: "%.1f st", v) }
+    static func metal(_ v: Double) -> String { v < 0.005 ? "TRACK" : Fmt.pct(v) }
+    static func slice(_ v: Double) -> String { Int(v.rounded()) > 0 ? "S\(Int(v.rounded()))" : "TRACK" }
+}
+struct StepKnobsA: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    let v: Step
+    var body: some View {
+        FlowRow(gap: m.r(0.05), rowGap: m.r(0.1), alignment: .top) {
+            ValueKnob(label: "Velocity", value: Double(v.velocity), range: 0...1, defaultValue: 0.8, format: StepFmt.vel) { x in c.updateStep { $0.velocity = Float(x) } }
+            ValueKnob(label: "Pan", value: Double(v.pan), range: -1...1, defaultValue: 0, format: StepFmt.pan) { x in c.updateStep { $0.pan = Float(abs(x) < 0.03 ? 0 : x) } }
+            ValueKnob(label: "Pitch", value: Double(v.pitch), range: -12...12, defaultValue: 0, step: 1, format: StepFmt.pitch) { x in c.updateStep { $0.pitch = Int8(x.rounded()) } }
+        }
+    }
+}
+struct StepKnobsB: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    let v: Step
+    let eng: Int
+    var body: some View {
+        let r: Double = Double(v.fmRatio)
+        let k: Double = r > 0 ? log(r / 0.25) / log(64) : 0
+        FlowRow(gap: m.r(0.05), rowGap: m.r(0.1), alignment: .top) {
+            ValueKnob(label: "Crush", value: Double(v.crush), range: 0...1, defaultValue: 0, format: StepFmt.crush) { x in c.updateStep { $0.crush = Float(x < 0.02 ? 0 : x) } }
+            ValueKnob(label: "Delay", value: Double(v.delaySend), range: 0...1, defaultValue: 0, format: StepFmt.send) { x in c.updateStep { $0.delaySend = Float(x < 0.01 ? 0 : x) } }
+            ValueKnob(label: "Reverb", value: Double(v.reverbSend), range: 0...1, defaultValue: 0, format: StepFmt.send) { x in c.updateStep { $0.reverbSend = Float(x < 0.01 ? 0 : x) } }
+            ValueKnob(label: "Fold", value: Double(v.fold), range: 0...1, defaultValue: 0, format: Fmt.pctOff) { x in c.updateStep { $0.fold = Float(x < 0.01 ? 0 : x) } }
+            ValueKnob(label: "Chance", value: Double(v.chance), range: 0...1, defaultValue: 1, format: Fmt.pct) { x in c.updateStep { $0.chance = Float(x > 0.99 ? 1 : x) } }
+            if eng == 2 {   // the step's own FM ratio (0 = the track's)
+                ValueKnob(label: "FM ratio", value: k, range: 0...1, defaultValue: 0, format: StepFmt.fmRatio) { x in c.updateStep { $0.fmRatio = x < 0.02 ? 0 : Float((0.25 * pow(64, x) * 100).rounded() / 100) } }
+            }
+        }
     }
 }

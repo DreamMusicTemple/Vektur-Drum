@@ -81,10 +81,9 @@ struct BLDetectRow: View {
     @Binding var st: BLState
     var body: some View {
         FlowRow(gap: m.r(0.35), rowGap: m.r(0.35), alignment: .bottom) {
-            ValueKnob(label: "Sens", value: sx.sensitivity, range: 0...1, defaultValue: 0.5, format: Fmt.pct) { v in var s = sx; s.sensitivity = v; c.edit { $0.tracks[t].slices = s } }
-            ValueKnob(label: "Threshold", value: sx.gapMs, range: 5...400, defaultValue: 50, format: { "\(Int($0.rounded())) ms" }) { v in var s = sx; s.gapMs = v.rounded(); c.edit { $0.tracks[t].slices = s } }
-            Button("DETECT") { snap(); var s = sx; SampleAnalysis.redetect(&s, sample: smp, projectTempo: c.project.tempo); if s.mode == .transient { s.makeSlices(frames: frames, rate: smp.sampleRate) }; c.setSlices(t, s); c.toast("\(s.marks.count) transients") }
-                .buttonStyle(HBStyle(led: .cyan))
+            ValueKnob(label: "Sens", value: sx.sensitivity, range: 0...1, defaultValue: 0.5, format: Fmt.pct) { v in setSens(v) }
+            ValueKnob(label: "Threshold", value: sx.gapMs, range: 5...400, defaultValue: 50, format: BLDetectRow.ms) { v in setGap(v) }
+            Button("DETECT") { detect() }.buttonStyle(HBStyle(led: .cyan))
             VStack(spacing: m.r(0.05)) {   // BPM number field
                 Text("BPM").font(PanelFont.ui(m.r(0.5), 400)).tracking(0.08 * m.r(0.5)).foregroundStyle(Color(hex: "#9a9ea6"))
                 OledBox(pad: 0.1) {
@@ -93,9 +92,8 @@ struct BLDetectRow: View {
                         .onSubmit { snap(); var s = sx; s.bpm = min(400, max(0, Double(st.bpmText) ?? 0)); st.bpmText = ""; c.setSlices(t, s) }
                 }
             }
-            Button("FIND BPM") { snap(); var s = sx; s.bpm = SampleAnalysis.bpm(smp, projectTempo: c.project.tempo); st.bpmText = ""; c.setSlices(t, s); c.toast(s.bpm > 0 ? "\(shortNumber(s.bpm)) BPM" : "No clear tempo") }.buttonStyle(HBStyle())
-            SelectCell(label: "Slice by", options: SampleSlices.Mode.allCases.map(\.name), selected: sx.mode.rawValue, cellWidth: 5) { i in
-                snap(); var s = sx; s.mode = SampleSlices.Mode(rawValue: i) ?? .transient; s.makeSlices(frames: frames, rate: smp.sampleRate); st.sel = 0; c.setSlices(t, s) }
+            Button("FIND BPM") { findBPM() }.buttonStyle(HBStyle())
+            SelectCell(label: "Slice by", options: SampleSlices.Mode.allCases.map(\.name), selected: sx.mode.rawValue, cellWidth: 5) { i in setMode(i) }
             if sx.mode == .equal || (sx.mode.rawValue >= 2 && sx.bpm == 0) {
                 let divs = [2, 4, 8, 12, 16, 24, 32]
                 SelectCell(label: "Slices", options: divs.map(String.init), selected: divs.firstIndex(of: sx.divisions) ?? 2) { i in snap(); var s = sx; s.divisions = divs[i]; s.makeSlices(frames: frames, rate: smp.sampleRate); c.setSlices(t, s) }
@@ -111,6 +109,19 @@ struct BLDetectRow: View {
         .padding(.vertical, m.r(0.35))
     }
     private var frames: Int { smp.channels.first?.count ?? 0 }
+    static func ms(_ v: Double) -> String { "\(Int(v.rounded())) ms" }
+    private func setSens(_ v: Double) { var s = sx; s.sensitivity = v; c.edit { $0.tracks[t].slices = s } }
+    private func setGap(_ v: Double) { var s = sx; s.gapMs = v.rounded(); c.edit { $0.tracks[t].slices = s } }
+    private func detect() {
+        snap(); var s = sx; SampleAnalysis.redetect(&s, sample: smp, projectTempo: c.project.tempo)
+        if s.mode == .transient { s.makeSlices(frames: frames, rate: smp.sampleRate) }
+        c.setSlices(t, s); c.toast("\(s.marks.count) transients")
+    }
+    private func findBPM() {
+        snap(); var s = sx; s.bpm = SampleAnalysis.bpm(smp, projectTempo: c.project.tempo); st.bpmText = ""; c.setSlices(t, s)
+        c.toast(s.bpm > 0 ? "\(shortNumber(s.bpm)) BPM" : "No clear tempo")
+    }
+    private func setMode(_ i: Int) { snap(); var s = sx; s.mode = SampleSlices.Mode(rawValue: i) ?? .transient; s.makeSlices(frames: frames, rate: smp.sampleRate); st.sel = 0; c.setSlices(t, s) }
     private func snap() { st.undo.append(sx); if st.undo.count > 60 { st.undo.removeFirst() }; st.redo = [] }
     private func restore(back: Bool) {
         if back { guard let s = st.undo.popLast() else { return }; st.redo.append(sx); c.setSlices(t, s) }
@@ -162,38 +173,38 @@ struct BLWave: View {
             }
             .background(Color(hex: "#0b0c0e"))
             .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0).onChanged { v in
-                let pos = { (xx: CGFloat) in Int((Double(st.off) + Double(xx / W) * span).rounded()) }
-                if start == nil {
-                    start = v.location; moved = false
-                    var best = -1, bd: CGFloat = 7
-                    for (i, k) in sx.marks.enumerated() { let dd = abs(CGFloat(Double(k.position - st.off) / span) * W - v.location.x); if dd < bd { bd = dd; best = i } }
-                    if best >= 0 { st.mark = best; drag = best; st.undo.append(sx); st.redo = []; return }
-                    let p = pos(v.location.x); st.mark = -1
-                    if let i = sx.slices.firstIndex(where: { p >= $0.start && p < $0.end }) { st.sel = i; c.hitSlice(t, i, velocity127: 110) }
-                    hold?.invalidate()
-                    hold = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: false) { _ in MainActor.assumeIsolated { if !moved { addMark(p) } } }
-                    return
-                }
-                if abs(v.location.x - (start?.x ?? 0)) > 4 { moved = true; hold?.invalidate() }
-                if drag >= 0, drag < sx.marks.count {
-                    var s = sx; s.marks[drag].position = min(max(0, pos(v.location.x)), max(0, n - 8)); s.marks[drag].manual = true
-                    c.edit { $0.tracks[t].slices = s }
-                }
-            }.onEnded { _ in
-                hold?.invalidate(); start = nil
-                if drag >= 0 {
-                    var s = sx; let mk = s.marks[safe: drag]; s.marks.sort { $0.position < $1.position }
-                    st.mark = mk.flatMap { k in s.marks.firstIndex { $0.position == k.position } } ?? -1
-                    if !moved { _ = st.undo.popLast() } else if s.mode == .transient { s.makeSlices(frames: n, rate: smp.sampleRate) }
-                    drag = -1; c.setSlices(t, s)
-                }
-            })
+            .gesture(DragGesture(minimumDistance: 0).onChanged { v in changed(v, W: W, span: span, n: n) }.onEnded { _ in ended(n) })
             .gesture(MagnificationGesture().onEnded { z in st.zoom = min(256, max(1, st.zoom * Double(z))); clamp(n) })
         }
         .clipShape(RoundedRectangle(cornerRadius: m.r(0.4)))
         .overlay(RoundedRectangle(cornerRadius: m.r(0.4)).stroke(Color(hex: "#2a2d32"), lineWidth: 1))
         .accessibilityLabel("Waveform with transient markers and slices")
+    }
+    private func pos(_ xx: CGFloat, _ W: CGFloat, _ span: Double) -> Int { Int((Double(st.off) + Double(xx / W) * span).rounded()) }
+    private func changed(_ v: DragGesture.Value, W: CGFloat, span: Double, n: Int) {
+        if start == nil { began(v, W: W, span: span); return }
+        if abs(v.location.x - (start?.x ?? 0)) > 4 { moved = true; hold?.invalidate() }
+        guard drag >= 0, drag < sx.marks.count else { return }
+        var s = sx; s.marks[drag].position = min(max(0, pos(v.location.x, W, span)), max(0, n - 8)); s.marks[drag].manual = true
+        c.edit { $0.tracks[t].slices = s }
+    }
+    private func began(_ v: DragGesture.Value, W: CGFloat, span: Double) {
+        start = v.location; moved = false
+        var best = -1; var bd: CGFloat = 7
+        for (i, k) in sx.marks.enumerated() { let dd = abs(CGFloat(Double(k.position - st.off) / span) * W - v.location.x); if dd < bd { bd = dd; best = i } }
+        if best >= 0 { st.mark = best; drag = best; st.undo.append(sx); st.redo = []; return }
+        let p = pos(v.location.x, W, span); st.mark = -1
+        if let i = sx.slices.firstIndex(where: { p >= $0.start && p < $0.end }) { st.sel = i; c.hitSlice(t, i, velocity127: 110) }
+        hold?.invalidate()
+        hold = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: false) { _ in MainActor.assumeIsolated { if !moved { addMark(p) } } }
+    }
+    private func ended(_ n: Int) {
+        hold?.invalidate(); start = nil
+        guard drag >= 0 else { return }
+        var s = sx; let mk = s.marks[safe: drag]; s.marks.sort { $0.position < $1.position }
+        st.mark = mk.flatMap { k in s.marks.firstIndex { $0.position == k.position } } ?? -1
+        if !moved { _ = st.undo.popLast() } else if s.mode == .transient { s.makeSlices(frames: n, rate: smp.sampleRate) }
+        drag = -1; c.setSlices(t, s)
     }
     private func clamp(_ n: Int) { let w = Double(n) / st.zoom; st.off = min(max(0, st.off), max(0, Int(Double(n) - w))) }
     private func addMark(_ p: Int) {
@@ -222,24 +233,26 @@ struct BLZoomRow: View {
                                   set: { let w = Double(n) / st.zoom; st.off = Int(($0 * (Double(n) - w)).rounded()) }), in: 0...1)
                 .frame(minWidth: m.r(8)).flexGrow().accessibilityLabel("Scroll the waveform")   // web: <input type=range>
             Color(hex: "#3a3d43").frame(width: 1, height: m.r(1.9)).padding(.horizontal, m.r(0.2))
-            Button("+ MARK") { let s = sx.slices[safe: st.sel]; let p = s.map { ($0.start + $0.end) / 2 } ?? Int(Double(st.off) + Double(n) / st.zoom / 2); addMark(p) }.buttonStyle(HBStyle())
-            Button("DELETE") { guard st.mark >= 0 else { return }; snap(); var s = sx; s.marks.remove(at: st.mark); st.mark = -1; if s.mode == .transient { s.makeSlices(frames: n, rate: smp.sampleRate) }; c.setSlices(t, s) }
-                .buttonStyle(HBStyle()).disabled(st.mark < 0).opacity(st.mark < 0 ? 0.5 : 1)
-            Button(mk.map { $0.accepted ? "REJECT" : "ACCEPT" } ?? "REJECT") { guard st.mark >= 0 else { return }; snap(); var s = sx; s.marks[st.mark].accepted.toggle(); if s.mode == .transient { s.makeSlices(frames: n, rate: smp.sampleRate) }; c.setSlices(t, s) }
-                .buttonStyle(HBStyle()).disabled(mk == nil).opacity(mk == nil ? 0.5 : 1)
-            Button("ACCEPT ALL") { snap(); var s = sx; for i in s.marks.indices { s.marks[i].accepted = true }; if s.mode == .transient { s.makeSlices(frames: n, rate: smp.sampleRate) }; c.setSlices(t, s) }.buttonStyle(HBStyle())
-            if let mk {
-                PanelSelect(options: HitClass.allCases.map(\.name), selected: mk.hit.rawValue, label: "Hit type") { i in
-                    snap(); var s = sx; let h = HitClass(rawValue: i) ?? .other; s.marks[st.mark].hit = h
-                    let near = Int(smp.sampleRate * 0.01); if let j = s.slices.firstIndex(where: { abs($0.start - mk.position) < near }) { s.slices[j].hit = h }
-                    c.setSlices(t, s)
-                }
-            }
+            Button("+ MARK") { markHere(n) }.buttonStyle(HBStyle())
+            Button("DELETE") { deleteMark(n) }.buttonStyle(HBStyle()).disabled(st.mark < 0).opacity(st.mark < 0 ? 0.5 : 1)
+            Button(mk.map { $0.accepted ? "REJECT" : "ACCEPT" } ?? "REJECT") { toggleMark(n) }.buttonStyle(HBStyle()).disabled(mk == nil).opacity(mk == nil ? 0.5 : 1)
+            Button("ACCEPT ALL") { acceptAll(n) }.buttonStyle(HBStyle())
+            if let mk { PanelSelect(options: HitClass.allCases.map(\.name), selected: mk.hit.rawValue, label: "Hit type") { i in setHit(i, mk) } }
         }
         .padding(.vertical, m.r(0.35))
     }
     private func clamp(_ n: Int) { let w = Double(n) / st.zoom; st.off = min(max(0, st.off), max(0, Int(Double(n) - w))) }
     private func snap() { st.undo.append(sx); if st.undo.count > 60 { st.undo.removeFirst() }; st.redo = [] }
+    private func reslice(_ s: inout SampleSlices, _ n: Int) { if s.mode == .transient { s.makeSlices(frames: n, rate: smp.sampleRate) } }
+    private func markHere(_ n: Int) { let s = sx.slices[safe: st.sel]; let p = s.map { ($0.start + $0.end) / 2 } ?? Int(Double(st.off) + Double(n) / st.zoom / 2); addMark(p) }
+    private func deleteMark(_ n: Int) { guard st.mark >= 0 else { return }; snap(); var s = sx; s.marks.remove(at: st.mark); st.mark = -1; reslice(&s, n); c.setSlices(t, s) }
+    private func toggleMark(_ n: Int) { guard st.mark >= 0 else { return }; snap(); var s = sx; s.marks[st.mark].accepted.toggle(); reslice(&s, n); c.setSlices(t, s) }
+    private func acceptAll(_ n: Int) { snap(); var s = sx; for i in s.marks.indices { s.marks[i].accepted = true }; reslice(&s, n); c.setSlices(t, s) }
+    private func setHit(_ i: Int, _ mk: TransientMark) {
+        snap(); var s = sx; let h = HitClass(rawValue: i) ?? .other; s.marks[st.mark].hit = h
+        let near = Int(smp.sampleRate * 0.01); if let j = s.slices.firstIndex(where: { abs($0.start - mk.position) < near }) { s.slices[j].hit = h }
+        c.setSlices(t, s)
+    }
     private func addMark(_ p: Int) {
         snap(); var s = sx; SampleAnalysis.addMark(&s, at: p, sample: smp)
         st.mark = s.marks.firstIndex { $0.manual && abs($0.position - p) < 2 } ?? -1
