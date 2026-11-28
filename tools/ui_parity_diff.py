@@ -2,8 +2,8 @@
 """Vektur Drum — native vs web pixel comparison.
 
 For each size: <web>/<size>.png (tools/ui_parity_web.mjs) against <native>/<size>.png (the app's -renderReference
-renders). Compares the part of the panel the native app has built so far: from the top down to the bottom of the
-web's SEQUENCER section (from <web>/<size>.json). Writes, per size, a side-by-side, a 50 % overlay and a difference
+renders). Compares the whole panel (PARITY_SEQ_ONLY=1: only down to the bottom of the
+web's SEQUENCER section) (from <web>/<size>.json). Writes, per size, a side-by-side, a 50 % overlay and a difference
 heatmap into <out>/, and <out>/REPORT.md with the scores:
   mean |Δ|   average per-channel difference, 0–255 (0 = identical)
   ≥24 px     share of pixels whose largest channel difference is 24 or more (visible differences)
@@ -12,6 +12,7 @@ heatmap into <out>/, and <out>/REPORT.md with the scores:
              drawing differences, with anti-aliasing and sub-point placement forgiven. This is the score to drive to 0.
 usage: ui_parity_diff.py <webDir> <nativeDir> <outDir>
 """
+import os
 import json, os, sys
 import numpy as np
 from PIL import Image
@@ -31,7 +32,7 @@ for s in sizes:
         els = json.load(open(os.path.join(web_dir, s + ".json")))
         seq = [e for e in els if (e.get("cls") or "").startswith("dmsec") and any(
             h.get("text") == "SEQUENCER" and h["y"] >= e["y"] and h["y"] < e["y"] + 30 for h in els if h["tag"] == "h5")]
-        if seq: bottom = int((seq[0]["y"] + seq[0]["h"]) * 2) + 4
+        if seq and os.environ.get("PARITY_SEQ_ONLY"): bottom = int((seq[0]["y"] + seq[0]["h"]) * 2) + 4   # the whole panel is built now
     except Exception:
         pass
     h = min(W.shape[0], N.shape[0], bottom or 10**9); w = min(W.shape[1], N.shape[1])
