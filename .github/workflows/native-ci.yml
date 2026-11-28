@@ -71,6 +71,8 @@ jobs:
           xcrun simctl io "$DEV" screenshot ui-native/simulator-screen.png || true
       - name: Crash reports and app log (if any)
         if: always()
+        continue-on-error: true
+        shell: bash {0}
         run: |
           ls -t ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i vektur | head -2 | while IFS= read -r name; do f="$HOME/Library/Logs/DiagnosticReports/$name"
             echo "=== $f"
@@ -93,7 +95,7 @@ jobs:
           DEV=$(xcrun simctl list devices booted -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next((x['udid'] for k in d for x in d[k]), ''))")
           [ -n "$DEV" ] && xcrun simctl spawn "$DEV" log show --last 3m --style compact --predicate 'process == "Vektur Drum"' 2>/dev/null | grep -iE "fault|error|fatal|Vektur Drum:" | tail -40 || true
       - name: Publish the renders to the ui-renders branch
-        if: github.ref_name == 'native-testflight'
+        if: always() && github.ref_name == 'native-testflight'
         run: |
           D=$(mktemp -d); cp -r ui-native "$D/"; cd "$D"
           git init -q -b ui-renders && git add -A
