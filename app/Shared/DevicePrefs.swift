@@ -55,6 +55,7 @@ struct DevicePrefs: Codable, Equatable {
     func setMIDIEnabled(_ on: Bool)
     var insertRunning: Bool { get }
     func setInsert(_ on: Bool) async -> String?    // nil = done, else the reason it could not start
+    func setScreenAwake(_ on: Bool)
 }
 
 extension DrumController {
@@ -68,7 +69,7 @@ extension DrumController {
     }
     func updatePrefs(_ f: (inout DevicePrefs) -> Void) { f(&prefs); prefs.save(); applyPowerPrefs() }
     func applyPowerPrefs() {
-        UIApplication.shared.isIdleTimerDisabled = prefs.noSleep
+        host?.setScreenAwake(prefs.noSleep)   // the plug-in has no say over the screen
     }
     /// A CC from MIDI (web vdMidi): learn, or move every parameter mapped to it.
     func takeCC(_ cc: Int, channel: Int, value: Int) {

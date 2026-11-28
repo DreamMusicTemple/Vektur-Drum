@@ -69,6 +69,10 @@ final class DrumController {
     var slicerLiveAction = 0
     /// The PADS window's VEL readout.
     var lastPadVelocity: Int?
+    /// Samples decoded on this device, by track (the BREAK LAB's waveform and analysis; web DSMP.mono).
+    @ObservationIgnored var decodedSamples: [Int: DecodedSample] = [:]
+    @ObservationIgnored var breakLabAfterImport = false
+    @ObservationIgnored var resampleCount = 0
 
     init?(unit: VekturDrumAudioUnit) {
         guard let raw = unit.engine, let keeper = unit.keeper else { return nil }

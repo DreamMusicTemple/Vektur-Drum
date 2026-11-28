@@ -158,5 +158,6 @@ extension StandaloneHost: HostServices {
     var midiPorts: [String] { ports }
     func setMIDIEnabled(_ on: Bool) { if on { startMIDI() } else { stopMIDI() } }
     var insertRunning: Bool { false }
+    func setScreenAwake(_ on: Bool) { UIApplication.shared.isIdleTimerDisabled = on }
     func setInsert(_ on: Bool) async -> String? { on ? "The insert input is not available in the standalone app yet — load Vektur Drum FX in a host to process audio" : nil }
 }

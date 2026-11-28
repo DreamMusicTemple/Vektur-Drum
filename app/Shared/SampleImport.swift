@@ -49,14 +49,23 @@ extension DrumController {
         let ref = Self.sampleRef(key: SampleDecode.key(bytes), name: name.isEmpty ? "Sample" : name)
         edit { $0.tracks[t].sample = ref; $0.tracks[t].slices = nil; $0.currentKitName = "" }
         set("t\(t + 1).engine", 1)   // loading a sample selects the Sample engine
-        engine.setSample(sample, track: t, slices: nil, values: project.tracks[t].values, tempo: project.tempo)
+        decodedSamples[t] = sample
+        if breakLabAfterImport {   // web blPickSample: detect and slice straight away
+            breakLabAfterImport = false
+            var sx = SampleSlices(); SampleAnalysis.redetect(&sx, sample: sample, projectTempo: project.tempo)
+            sx.makeSlices(frames: sample.channels.first?.count ?? 0, rate: sample.sampleRate)
+            set("t\(t + 1).slice", 1)
+            setSlices(t, sx)
+        } else {
+            engine.setSample(sample, track: t, slices: nil, values: project.tracks[t].values, tempo: project.tempo)
+        }
         toast("Track \(t + 1) plays \(ref?.name ?? name)")
     }
     func removeSample(track t: Int) {
         guard project.tracks[t].sample != nil else { return }
         edit { $0.tracks[t].sample = nil; $0.tracks[t].slices = nil }
         set("t\(t + 1).engine", 0)
-        engine.setSample(nil, track: t)
+        engine.setSample(nil, track: t); decodedSamples[t] = nil
     }
     /// SampleRef has no public memberwise initialiser; it is Codable, so it is built from its coded form.
     static func sampleRef(key: String, name: String) -> SampleRef? {
