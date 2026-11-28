@@ -1,0 +1,778 @@
+{
+ "app": "Vektur Drum 0.9.1 web",
+ "sizes": [
+  [
+   "ipad13-landscape",
+   1366,
+   1024
+  ],
+  [
+   "ipad11-landscape",
+   1194,
+   834
+  ],
+  [
+   "ipad11-portrait",
+   834,
+   1194
+  ],
+  [
+   "iphone-landscape",
+   852,
+   393
+  ],
+  [
+   "iphone-portrait",
+   393,
+   852
+  ]
+ ],
+ "rootFontSize": {
+  "ipad13-landscape": "16.757px",
+  "ipad11-landscape": "14.638px",
+  "ipad11-portrait": "13px",
+  "iphone-landscape": "13px",
+  "iphone-portrait": "13px"
+ },
+ "dials": [
+  "classic",
+  "machined",
+  "chrome",
+  "wood",
+  "mecha",
+  "porcelain",
+  "blueprint",
+  "interstellar",
+  "aqua",
+  "scientific",
+  "holo"
+ ],
+ "steps": [
+  "classic",
+  "glass",
+  "neon"
+ ],
+ "themes": [
+  "amber",
+  "cyanlab",
+  "magenta",
+  "lime",
+  "ice",
+  "sunset",
+  "ocean",
+  "ruby",
+  "gold",
+  "neon",
+  "forest",
+  "mono",
+  "temple"
+ ],
+ "shots": [
+  {
+   "size": "ipad13-landscape",
+   "screen": "01-main",
+   "file": "ipad13-landscape/01-main.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "02-main-kit-step-selected",
+   "file": "ipad13-landscape/02-main-kit-step-selected.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "03-main-sample-track",
+   "file": "ipad13-landscape/03-main-sample-track.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "04-presets",
+   "file": "ipad13-landscape/04-presets.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "05-slicer-metalise",
+   "file": "ipad13-landscape/05-slicer-metalise.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "06-mod-window",
+   "file": "ipad13-landscape/06-mod-window.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "07-mod-hold-popup",
+   "file": "ipad13-landscape/07-mod-hold-popup.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "08-breaklab",
+   "file": "ipad13-landscape/08-breaklab.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "09-generate",
+   "file": "ipad13-landscape/09-generate.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "10-export",
+   "file": "ipad13-landscape/10-export.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "11-pads-window",
+   "file": "ipad13-landscape/11-pads-window.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "12-ring-step",
+   "file": "ipad13-landscape/12-ring-step.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "13-settings-audio",
+   "file": "ipad13-landscape/13-settings-audio.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "14-settings-appearance",
+   "file": "ipad13-landscape/14-settings-appearance.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "15-settings-project",
+   "file": "ipad13-landscape/15-settings-project.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "16-settings-midi",
+   "file": "ipad13-landscape/16-settings-midi.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "17-settings-cc",
+   "file": "ipad13-landscape/17-settings-cc.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "18-settings-manual",
+   "file": "ipad13-landscape/18-settings-manual.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad13-landscape",
+   "screen": "19-settings-about",
+   "file": "ipad13-landscape/19-settings-about.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "01-main",
+   "file": "ipad11-landscape/01-main.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "02-main-kit-step-selected",
+   "file": "ipad11-landscape/02-main-kit-step-selected.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "03-main-sample-track",
+   "file": "ipad11-landscape/03-main-sample-track.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "04-presets",
+   "file": "ipad11-landscape/04-presets.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "05-slicer-metalise",
+   "file": "ipad11-landscape/05-slicer-metalise.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "06-mod-window",
+   "file": "ipad11-landscape/06-mod-window.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "07-mod-hold-popup",
+   "file": "ipad11-landscape/07-mod-hold-popup.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "08-breaklab",
+   "file": "ipad11-landscape/08-breaklab.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "09-generate",
+   "file": "ipad11-landscape/09-generate.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "10-export",
+   "file": "ipad11-landscape/10-export.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "11-pads-window",
+   "file": "ipad11-landscape/11-pads-window.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "12-ring-step",
+   "file": "ipad11-landscape/12-ring-step.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "13-settings-audio",
+   "file": "ipad11-landscape/13-settings-audio.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "14-settings-appearance",
+   "file": "ipad11-landscape/14-settings-appearance.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "15-settings-project",
+   "file": "ipad11-landscape/15-settings-project.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "16-settings-midi",
+   "file": "ipad11-landscape/16-settings-midi.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "17-settings-cc",
+   "file": "ipad11-landscape/17-settings-cc.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "18-settings-manual",
+   "file": "ipad11-landscape/18-settings-manual.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "19-settings-about",
+   "file": "ipad11-landscape/19-settings-about.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "01-main",
+   "file": "ipad11-portrait/01-main.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "02-main-kit-step-selected",
+   "file": "ipad11-portrait/02-main-kit-step-selected.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "03-main-sample-track",
+   "file": "ipad11-portrait/03-main-sample-track.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "04-presets",
+   "file": "ipad11-portrait/04-presets.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "05-slicer-metalise",
+   "file": "ipad11-portrait/05-slicer-metalise.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "06-mod-window",
+   "file": "ipad11-portrait/06-mod-window.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "07-mod-hold-popup",
+   "file": "ipad11-portrait/07-mod-hold-popup.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "08-breaklab",
+   "file": "ipad11-portrait/08-breaklab.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "09-generate",
+   "file": "ipad11-portrait/09-generate.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "10-export",
+   "file": "ipad11-portrait/10-export.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "11-pads-window",
+   "file": "ipad11-portrait/11-pads-window.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "12-ring-step",
+   "file": "ipad11-portrait/12-ring-step.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "13-settings-audio",
+   "file": "ipad11-portrait/13-settings-audio.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "14-settings-appearance",
+   "file": "ipad11-portrait/14-settings-appearance.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "15-settings-project",
+   "file": "ipad11-portrait/15-settings-project.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "16-settings-midi",
+   "file": "ipad11-portrait/16-settings-midi.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "17-settings-cc",
+   "file": "ipad11-portrait/17-settings-cc.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "18-settings-manual",
+   "file": "ipad11-portrait/18-settings-manual.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-portrait",
+   "screen": "19-settings-about",
+   "file": "ipad11-portrait/19-settings-about.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "01-main",
+   "file": "iphone-landscape/01-main.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "02-main-kit-step-selected",
+   "file": "iphone-landscape/02-main-kit-step-selected.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "03-main-sample-track",
+   "file": "iphone-landscape/03-main-sample-track.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "04-presets",
+   "file": "iphone-landscape/04-presets.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "05-slicer-metalise",
+   "file": "iphone-landscape/05-slicer-metalise.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "06-mod-window",
+   "file": "iphone-landscape/06-mod-window.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "07-mod-hold-popup",
+   "file": "iphone-landscape/07-mod-hold-popup.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "08-breaklab",
+   "file": "iphone-landscape/08-breaklab.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "09-generate",
+   "file": "iphone-landscape/09-generate.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "10-export",
+   "file": "iphone-landscape/10-export.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "11-pads-window",
+   "file": "iphone-landscape/11-pads-window.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "12-ring-step",
+   "file": "iphone-landscape/12-ring-step.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "13-settings-audio",
+   "file": "iphone-landscape/13-settings-audio.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "14-settings-appearance",
+   "file": "iphone-landscape/14-settings-appearance.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "15-settings-project",
+   "file": "iphone-landscape/15-settings-project.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "16-settings-midi",
+   "file": "iphone-landscape/16-settings-midi.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "17-settings-cc",
+   "file": "iphone-landscape/17-settings-cc.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "18-settings-manual",
+   "file": "iphone-landscape/18-settings-manual.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-landscape",
+   "screen": "19-settings-about",
+   "file": "iphone-landscape/19-settings-about.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "01-main",
+   "file": "iphone-portrait/01-main.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "02-main-kit-step-selected",
+   "file": "iphone-portrait/02-main-kit-step-selected.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "03-main-sample-track",
+   "file": "iphone-portrait/03-main-sample-track.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "04-presets",
+   "file": "iphone-portrait/04-presets.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "05-slicer-metalise",
+   "file": "iphone-portrait/05-slicer-metalise.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "06-mod-window",
+   "file": "iphone-portrait/06-mod-window.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "07-mod-hold-popup",
+   "file": "iphone-portrait/07-mod-hold-popup.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "08-breaklab",
+   "file": "iphone-portrait/08-breaklab.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "09-generate",
+   "file": "iphone-portrait/09-generate.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "10-export",
+   "file": "iphone-portrait/10-export.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "11-pads-window",
+   "file": "iphone-portrait/11-pads-window.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "12-ring-step",
+   "file": "iphone-portrait/12-ring-step.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "13-settings-audio",
+   "file": "iphone-portrait/13-settings-audio.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "14-settings-appearance",
+   "file": "iphone-portrait/14-settings-appearance.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "15-settings-project",
+   "file": "iphone-portrait/15-settings-project.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "16-settings-midi",
+   "file": "iphone-portrait/16-settings-midi.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "17-settings-cc",
+   "file": "iphone-portrait/17-settings-cc.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "18-settings-manual",
+   "file": "iphone-portrait/18-settings-manual.webp",
+   "errors": []
+  },
+  {
+   "size": "iphone-portrait",
+   "screen": "19-settings-about",
+   "file": "iphone-portrait/19-settings-about.webp",
+   "errors": []
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-classic",
+   "file": "variants/dial-classic.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-machined",
+   "file": "variants/dial-machined.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-chrome",
+   "file": "variants/dial-chrome.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-wood",
+   "file": "variants/dial-wood.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-mecha",
+   "file": "variants/dial-mecha.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-porcelain",
+   "file": "variants/dial-porcelain.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-blueprint",
+   "file": "variants/dial-blueprint.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-interstellar",
+   "file": "variants/dial-interstellar.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-aqua",
+   "file": "variants/dial-aqua.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-scientific",
+   "file": "variants/dial-scientific.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "dial-holo",
+   "file": "variants/dial-holo.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "steps-classic",
+   "file": "variants/steps-classic.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "steps-glass",
+   "file": "variants/steps-glass.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "steps-neon",
+   "file": "variants/steps-neon.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-amber",
+   "file": "variants/theme-amber.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-cyanlab",
+   "file": "variants/theme-cyanlab.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-magenta",
+   "file": "variants/theme-magenta.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-lime",
+   "file": "variants/theme-lime.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-ice",
+   "file": "variants/theme-ice.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-sunset",
+   "file": "variants/theme-sunset.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-ocean",
+   "file": "variants/theme-ocean.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-ruby",
+   "file": "variants/theme-ruby.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-gold",
+   "file": "variants/theme-gold.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-neon",
+   "file": "variants/theme-neon.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-forest",
+   "file": "variants/theme-forest.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-mono",
+   "file": "variants/theme-mono.webp"
+  },
+  {
+   "size": "ipad11-landscape",
+   "screen": "theme-temple",
+   "file": "variants/theme-temple.webp"
+  }
+ ],
+ "notes": "Touch emulated; the web app scales its panel on touch screens >= 700 pt wide: root font = 13 px x clamp(width/1060, 1, 1.35) (see rootFontSize per size; it is frozen during capture so full-page shots keep it). Screenshots at 2x device pixels; ipad11-landscape/ lossless, others WebP q94. styles/*.json: every visible element at iPad 11-inch landscape, measured before the screenshot (CSS px = iOS points). Captured on Linux Chrome: text renders in a fallback face (Inter); fonts: see docs/HANDOVER-native.md 9.3."
+}

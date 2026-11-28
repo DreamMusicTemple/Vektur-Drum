@@ -1,0 +1,132 @@
+name: Native build
+
+# Compiles the Swift package (VekturDrumKit) on a Mac for macOS and iOS, runs its XCTests, and runs the C++ engine
+# suite (tests/run_native.sh: engine tests, sanitizers, strict parity with the web engine ≤ 1e-6).
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash   # -eo pipefail: a failing build fails the step even when piped through tee
+
+jobs:
+  swift:
+    name: Swift package (macOS + iOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: xcodebuild -version && swift --version
+      - name: Build (macOS)
+        working-directory: native
+        run: swift build 2>&1 | tee ../swift-build.log
+      - name: Test (macOS)
+        working-directory: native
+        run: swift test 2>&1 | tee ../swift-test.log
+      - name: Build (iOS device)
+        working-directory: native
+        run: |
+          set -o pipefail
+          xcodebuild -scheme VekturDrumKit-Package -destination 'generic/platform=iOS' -skipPackagePluginValidation build 2>&1 | tee ../ios-build.log | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" ../ios-build.log
+      - name: Keep logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-logs
+          path: "*.log"
+
+  app:
+    name: App + AUv3 (iOS Simulator, unsigned)
+    runs-on: macos-15
+    permissions:
+      contents: write   # pushes the simulator renders to the ui-renders branch
+    steps:
+      - uses: actions/checkout@v4
+      - name: XcodeGen
+        run: brew install xcodegen
+      - name: Generate the Xcode project
+        working-directory: app
+        env: { BUNDLE_ID: com.dreammusictemple.vekturdrum, APPLE_TEAM_ID: "", BUILD_NUMBER: "1" }
+        run: xcodegen
+      - name: Build
+        run: |
+          xcodebuild -project app/VekturDrum.xcodeproj -scheme VekturDrum -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build 2>&1 | tee app-build.log \
+            | grep -E "error:|warning: .*(Vektur|Shared)|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" app-build.log
+      - name: Render the panel in the simulator (visual check against design/ui-reference)
+        run: |
+          set -x
+          APP=$(find ~/Library/Developer/Xcode/DerivedData -path "*Debug-iphonesimulator/Vektur Drum.app" -maxdepth 6 | head -1)
+          DEV=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k in d for x in d[k] if 'iPad' in x['name'] and 'iOS' in k))")
+          xcrun simctl boot "$DEV"; xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          xcrun simctl launch "$DEV" com.dreammusictemple.vekturdrum -renderReference
+          DATA=$(xcrun simctl get_app_container "$DEV" com.dreammusictemple.vekturdrum data)
+          for i in $(seq 1 60); do [ -f "$DATA/Documents/ui-native/DONE" ] && break; sleep 2; done
+          mkdir -p ui-native && cp "$DATA"/Documents/ui-native/*.png ui-native/ && (cp "$DATA"/Documents/ui-native/*.json ui-native/ 2>/dev/null || true) && ls -la ui-native
+          xcrun simctl io "$DEV" screenshot ui-native/simulator-screen.png || true
+      - name: Crash reports and app log (if any)
+        if: always()
+        continue-on-error: true
+        shell: bash {0}
+        run: |
+          ls -t ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i vektur | head -2 | while IFS= read -r name; do f="$HOME/Library/Logs/DiagnosticReports/$name"
+            echo "=== $f"
+            python3 - "$f" <<'PY'
+          import json, sys
+          raw = open(sys.argv[1]).read(); body = raw[raw.index('\n') + 1:]
+          try: r = json.loads(body)
+          except Exception: print(raw[:6000]); sys.exit()
+          ex = r.get('exception', {}); print('exception:', ex, r.get('termination', {}).get('indicator'))
+          for k in ('asi', 'lastExceptionBacktrace'):
+              if k in r: print(k, json.dumps(r[k])[:3000])
+          imgs = r.get('usedImages', [])
+          for th in r.get('threads', []):
+              if th.get('triggered'):
+                  for fr in th.get('frames', [])[:40]:
+                      img = imgs[fr['imageIndex']]['name'] if fr.get('imageIndex') is not None and fr['imageIndex'] < len(imgs) else '?'
+                      print(f"  {img:28} {fr.get('symbol', '?')} {fr.get('sourceFile', '')}:{fr.get('sourceLine', '')}")
+          PY
+          done
+          DEV=$(xcrun simctl list devices booted -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next((x['udid'] for k in d for x in d[k]), ''))")
+          [ -n "$DEV" ] && xcrun simctl spawn "$DEV" log show --last 3m --style compact --predicate 'process == "Vektur Drum"' 2>/dev/null | grep -iE "fault|error|fatal|Vektur Drum:" | tail -40 || true
+      - name: Render the web app with WebKit (same fonts as iPad) and compare
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i --silent playwright@1 >/dev/null && npx playwright install webkit >/dev/null
+          cp "$GITHUB_WORKSPACE/tools/ui_parity_web.mjs" /tmp/pw/ && WEB_INDEX="$GITHUB_WORKSPACE/web/dist/index.html" node /tmp/pw/ui_parity_web.mjs "$GITHUB_WORKSPACE/ui-native/web"
+          cd "$GITHUB_WORKSPACE" && python3 -m pip install --quiet --break-system-packages pillow numpy 2>/dev/null || python3 -m pip install --quiet pillow numpy
+          python3 tools/ui_parity_diff.py ui-native/web ui-native ui-native/diff | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the renders to the ui-renders branch
+        if: always() && github.ref_name == 'native-testflight'
+        run: |
+          D=$(mktemp -d); cp -r ui-native "$D/"; cd "$D"
+          git init -q -b ui-renders && git add -A
+          git -c user.name="Vektur Drum CI" -c user.email="ci@users.noreply.github.com" commit -q -m "Native renders for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" ui-renders
+      - name: Keep the log and renders
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: |
+            app-build.log
+            ui-native/
+
+  dsp:
+    name: C++ engine suite
+    # Pinned: the web↔C++ parity reference was recorded on Ubuntu 24.04 (glibc 2.39). Newer glibc (26.04) rounds some
+    # maths functions differently, which chaotic sections (FM feedback, Lorenz) amplify. The engine itself is unaffected.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22   # the parity reference was recorded with Node 22's V8 maths
+      - name: Engine tests, sanitizers, strict parity
+        run: sh tests/run_native.sh

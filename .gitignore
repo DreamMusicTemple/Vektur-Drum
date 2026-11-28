@@ -1,0 +1,10 @@
+.build/
+DerivedData/
+xcuserdata/
+*.xcarchive
+build/
+node_modules/
+.DS_Store
+*.p8
+*.p12
+*.mobileprovision
