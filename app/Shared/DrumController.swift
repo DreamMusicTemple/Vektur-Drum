@@ -25,6 +25,8 @@ final class DrumController {
     var selectedTrack = 0
     var selectedStep = -1
     var theme = AppearanceTheme.all[0]
+    /// Bumped on every parameter change from the panel, so dials redraw (engine values are not observable themselves).
+    var paramVersion = 0
 
     init?(unit: VekturDrumAudioUnit) {
         guard let raw = unit.engine, let keeper = unit.keeper else { return nil }
@@ -42,7 +44,9 @@ final class DrumController {
         return [AUStateKeeper.stateKey: data]
     }
 
-    func reloadFromKeeper() { if let k = unit.keeper { project = k.currentProject(); unit.standaloneTempo = project.tempo } }
+    func reloadFromKeeper() { if let k = unit.keeper { project = k.currentProject(); unit.standaloneTempo = project.tempo; paramVersion &+= 1 } }
+    /// The standalone tempo (web S.bpm; the MASTER Tempo dial, 40…240).
+    func setTempo(_ bpm: Double) { let v = min(240, max(40, (bpm * 2).rounded() / 2)); edit { $0.tempo = v }; unit.standaloneTempo = v }
 
     // MARK: - telemetry (web: paintDrumLive, ~30 Hz)
     private func startPolling() {
@@ -95,12 +99,13 @@ final class DrumController {
         if new != nil { selectedTrack = t; selectedStep = s }
     }
     func value(_ key: String) -> Double {
+        _ = paramVersion
         guard let id = ParameterID(key: key) else { return 0 }
         return engine.parameter(id)
     }
     func set(_ key: String, _ v: Double) {
         guard let id = ParameterID(key: key) else { return }
-        engine.setParameter(id, v)
+        engine.setParameter(id, v); paramVersion &+= 1
     }
 
     /// One edit to the song: here (for the panel) and in the unit's keeper (for saving and the plug-in).

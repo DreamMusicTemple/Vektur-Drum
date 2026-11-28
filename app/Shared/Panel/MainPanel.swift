@@ -36,6 +36,7 @@ struct DrumPanel: View {
                 TransportSection(c: c)
                 DisplaySection(c: c).flexGrow()
                 PatternSection(c: c)
+                MasterSection(c: c)
             }
             .padding(.bottom, m.r(0.35))
             SequencerSection(c: c)
@@ -234,6 +235,23 @@ struct ChainStrip: View {
         .background(RoundedRectangle(cornerRadius: m.r(0.35)).fill(Color(hex: "#07080a"))
             .overlay(RoundedRectangle(cornerRadius: m.r(0.35)).stroke(Color.black.opacity(0.9), lineWidth: 3).blur(radius: 1.5).offset(y: 1)
                 .clipShape(RoundedRectangle(cornerRadius: m.r(0.35)))))
+    }
+}
+
+struct MasterSection: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    var body: some View {
+        PanelSection(title: "MASTER", zone: .ctl) {
+            HStack(alignment: .top, spacing: m.r(0.05)) {   // #drumModal .dm .dmknobs{gap:.1rem .05rem}
+                let bpm = c.project.tempo
+                KnobCell(label: "Tempo", value: (bpm - 40) / 200, centre: nil, defaultValue: 0.4, text: String(format: "%.1f", bpm)) { t in c.setTempo(40 + t * 200) }
+                ParamKnob(c: c, key: "dr.swing", label: "Swing")
+                ParamKnob(c: c, key: "dr.temper", label: "Temper", format: ParamFormat.temper)
+                ParamKnob(c: c, key: "dr.human", label: "Humanise", format: ParamFormat.humanise)
+                ParamKnob(c: c, key: "dr.level", label: "Level")
+            }
+        }
     }
 }
 
