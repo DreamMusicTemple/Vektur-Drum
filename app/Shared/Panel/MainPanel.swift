@@ -54,6 +54,8 @@ struct DrumPanel: View {
             .clipShape(RoundedRectangle(cornerRadius: radius))
         }
         .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Color.black, lineWidth: 1))
+        .coordinateSpace(name: "panel")
+        .onPreferenceChange(FrameKey.self) { f in MainActor.assumeIsolated { Measure.frames = f } }
     }
 }
 
@@ -180,8 +182,8 @@ struct PatternSection: View {
                     }
                 }
                 ChainRow {   // .dmchain.dmpatedit
-                    RowLabel("PATTERN \(sel + 1)")
-                    Button("COPY") {}.buttonStyle(HBStyle())
+                    RowLabel("PATTERN \(sel + 1)").measure("dmrowlbl:PATTERN")
+                    Button("COPY") {}.buttonStyle(HBStyle()).measure("hb:COPY")
                     Button("PASTE") {}.buttonStyle(HBStyle())
                     Button("CLEAR") {}.buttonStyle(HBStyle())
                     let v = pat.slicer
@@ -361,21 +363,22 @@ struct TrackRow: View {
         SeqGrid(rem: m.rem) {
             Button { c.selectedTrack = t } label: {   // .hb.dmname
                 VStack(alignment: .leading, spacing: m.r(0.08)) {   // .dmname: column, gap .08rem, line-height 1
-                    NameLines(name: c.trackName(t), size: m.r(0.58), width: m.r(5.2) - 2 * m.r(0.45) - 2)
+                    NameLines(name: c.trackName(t), size: m.r(0.58), width: m.r(5.2) - 2 * m.r(0.45) - 2).measure("name:\(t)")
                     Text("TRACK \(n)").font(PanelFont.ui(m.r(0.5), 700)).letterSpacing(0.1, size: m.r(0.5)).foregroundStyle(th.print)
-                        .frame(height: m.r(0.5))
+                        .frame(height: m.r(0.5)).measure("small:\(t)")
                 }
             }
             .buttonStyle(HBStyle(size: .normal, minWidth: 5.2, paddingX: 0.45, led: .amber, on: false, selected: t == c.selectedTrack, alignment: .leading))
+            .measure("dmname:\(t)")
             Button("M") { c.set("t\(n).mute", muted ? 0 : 1) }.buttonStyle(HBStyle(led: .amber, on: muted))
             Button("S") { c.set("t\(n).solo", solo ? 0 : 1) }.buttonStyle(HBStyle(led: .cyan, on: solo))
             StepKeys(c: c, t: t, steps: tp.steps, length: tp.length, muted: muted)
             HStack(spacing: m.r(0.15)) {   // .dmlen — the display shrinks to the space left (min-width:0)
                 Button("−") {}.buttonStyle(HBStyle())
-                OledView(lines: [Text(String(format: "%02d", tp.length))], padV: 0.15, padH: 0.3, center: true).frame(maxWidth: m.r(1.9))
+                OledView(lines: [Text(String(format: "%02d", tp.length))], padV: 0.15, padH: 0.3, center: true, width: 5.4 - 2 * 1.9 - 2 * 0.15)   // web: 1.9rem shrunk to the 5.4rem column's remainder.measure("lenoled:\(t)")
                 Button("+") {}.buttonStyle(HBStyle())
             }
-            DivisionCell(label: tp.division.label)
+            DivisionCell(label: tp.division.label).measure("dmdiv:\(t)")
         }
     }
 }

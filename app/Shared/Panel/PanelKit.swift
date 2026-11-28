@@ -143,6 +143,7 @@ struct OledView: View {
     var padV: CGFloat = 0.3       // rem
     var padH: CGFloat = 0.5       // rem
     var center = false
+    var width: CGFloat? = nil     // rem: a fixed box (content overflows, centred), e.g. .dmlen's shrunken display
     var body: some View {
         let fs = m.r(0.74)
         VStack(alignment: center ? .center : .leading, spacing: 0) {
@@ -151,7 +152,8 @@ struct OledView: View {
             .font(PanelFont.mono(fs, 600)).foregroundStyle(th.cyan)
             .fixedSize()
             .padding(.vertical, m.r(padV)).padding(.horizontal, m.r(padH))
-            .frame(minWidth: m.r(minWidth), maxWidth: .infinity, alignment: center ? .top : .topLeading)
+            .frame(width: width.map { m.r($0) })
+            .frame(minWidth: m.r(minWidth), maxWidth: width == nil ? .infinity : m.r(width!), alignment: center ? .top : .topLeading)
             .background {
                 ZStack {
                     Color(hex: "#030506")

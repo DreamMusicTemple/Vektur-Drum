@@ -20,6 +20,11 @@ enum ReferenceRender {
             let r = ImageRenderer(content: view); r.scale = 2; r.proposedSize = ProposedViewSize(width: w, height: nil)
             if let img = r.uiImage, let png = img.pngData() { try? png.write(to: dir.appendingPathComponent("\(name).png")) }
         }
+        // frames from the live panel on screen (this simulator's width), for comparison with the web's element boxes
+        let fr = Measure.frames.mapValues { ["x": $0.minX, "y": $0.minY, "w": $0.width, "h": $0.height] }
+        if let j = try? JSONSerialization.data(withJSONObject: ["screenWidth": UIScreen.main.bounds.width, "frames": fr], options: [.sortedKeys, .prettyPrinted]) {
+            try? j.write(to: dir.appendingPathComponent("frames-live.json"))
+        }
         try? Data("done".utf8).write(to: dir.appendingPathComponent("DONE"))
     }
 }

@@ -67,7 +67,7 @@ jobs:
           xcrun simctl launch "$DEV" com.dreammusictemple.vekturdrum -renderReference
           DATA=$(xcrun simctl get_app_container "$DEV" com.dreammusictemple.vekturdrum data)
           for i in $(seq 1 60); do [ -f "$DATA/Documents/ui-native/DONE" ] && break; sleep 2; done
-          mkdir -p ui-native && cp "$DATA"/Documents/ui-native/*.png ui-native/ && ls -la ui-native
+          mkdir -p ui-native && cp "$DATA"/Documents/ui-native/*.png ui-native/ && (cp "$DATA"/Documents/ui-native/*.json ui-native/ 2>/dev/null || true) && ls -la ui-native
           xcrun simctl io "$DEV" screenshot ui-native/simulator-screen.png || true
       - name: Crash reports and app log (if any)
         if: always()
