@@ -4,7 +4,8 @@
 import SwiftUI
 import VekturDrumCore
 
-/// One dial cell: .kcell{width:4.3rem; gap:.12rem} · .klbl .5rem · .knob 2.3rem · .kval .54rem (in #drumModal .dm).
+/// One dial cell, as #drumModal .dm sizes it: .kcell{width:3.35rem;gap:.05rem} · .klbl .5rem · .knob 2.3rem ·
+/// .kval{font-size:.54rem;min-width:2.2rem;padding:0 .2rem}. Some groups use other sizes (cellWidth / knobSize).
 struct KnobCell: View {
     @Environment(\.panel) private var m
     @Environment(\.theme) private var th
@@ -13,13 +14,15 @@ struct KnobCell: View {
     let centre: Double?              // bipolar centre (0…1), nil = unipolar
     let defaultValue: Double?        // normalised, for double-tap
     let text: String                 // the value as the web prints it
+    var cellWidth: CGFloat = 3.35    // rem
+    var knobSize: CGFloat = 2.3      // rem
     let set: (Double) -> Void
     @State private var dragStart: Double?
     @State private var lastTap = Date.distantPast
 
     var body: some View {
-        let kw = m.r(2.3), lfs = m.r(0.5), vfs = m.r(0.54)
-        VStack(spacing: m.r(0.12)) {
+        let kw = m.r(knobSize), lfs = m.r(0.5), vfs = m.r(0.54)
+        VStack(spacing: m.r(0.05)) {
             Text(label.uppercased()).font(PanelFont.ui(lfs, 400)).letterSpacing(0.08, size: lfs).foregroundStyle(Color(hex: "#9a9ea6"))
                 .lineLimit(1).truncationMode(.tail)
             InterstellarDial(t: value, colorHex: th.arcHex, dragging: dragStart != nil)
@@ -40,14 +43,14 @@ struct KnobCell: View {
                 .accessibilityElement().accessibilityLabel(label).accessibilityValue(text)
                 .accessibilityAdjustableAction { d in set(min(1, max(0, value + (d == .increment ? 0.01 : -0.01)))) }
             Text(text).font(PanelFont.mono(vfs, 600)).foregroundStyle(Color(hex: "#d8d4c8")).lineLimit(1)
-                .padding(.vertical, m.r(0.05)).padding(.horizontal, m.r(0.2))
+                .padding(.horizontal, m.r(0.2))
                 .frame(minWidth: m.r(2.2))
                 .background(RoundedRectangle(cornerRadius: m.r(0.2)).fill(Color(hex: "#090b0c"))
                     .overlay(RoundedRectangle(cornerRadius: m.r(0.2)).stroke(Color.black.opacity(0.8), lineWidth: 2).blur(radius: 1).offset(y: 1)
                         .clipShape(RoundedRectangle(cornerRadius: m.r(0.2)))))
                 .overlay(alignment: .bottom) { Color.white.opacity(0.05).frame(height: 1).offset(y: 1).padding(.horizontal, 2) }
         }
-        .frame(width: m.r(4.3))
+        .frame(width: m.r(cellWidth))
     }
 }
 

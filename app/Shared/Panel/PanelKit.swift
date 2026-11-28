@@ -103,7 +103,7 @@ struct PanelSection<Content: View>: View {
         content
             // #drumModal .dm .dmsec{padding:1.3rem .4rem .3rem}
             .padding(.top, m.r(1.3)).padding(.horizontal, m.r(0.4)).padding(.bottom, m.r(0.3))
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)   // stretch in a row (align-items: stretch)
             .background {
                 ZStack {
                     LinearGradient(colors: [th.chassis[3], th.chassis[4]], startPoint: .top, endPoint: .bottom)
