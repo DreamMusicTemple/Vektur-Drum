@@ -73,7 +73,7 @@ struct TopStrip: View {
             .foregroundStyle(lettering).shadow(color: .white.opacity(0.35), radius: 0, x: 0, y: 1).fixedSize()
             HStack(spacing: m.r(0.2)) {   // .dmtc
                 Text("TRACKS").font(PanelFont.ui(sfs, 700)).letterSpacing(0.18, size: sfs).foregroundStyle(lettering).padding(.trailing, m.r(0.2))
-                ForEach(6...TrackLimits.capacity, id: \.self) { n in
+                ForEach(6...TrackLimits.playable.upperBound, id: \.self) { n in
                     Button("\(n)") { c.setTrackCount(n) }.buttonStyle(HBStyle(led: .amber, on: n == c.trackCount))
                         .accessibilityLabel("\(n) tracks")
                 }
@@ -81,8 +81,8 @@ struct TopStrip: View {
             .padding(.trailing, m.r(0.4))
             Color.clear.frame(width: 0, height: 1).flexGrow()   // .sp
             Group {
-                Button("↶") {}.buttonStyle(HBStyle(minWidth: 1.9, fontSize: 0.95, paddingX: 0.35)).disabled(true).accessibilityLabel("Undo")
-                Button("↷") {}.buttonStyle(HBStyle(minWidth: 1.9, fontSize: 0.95, paddingX: 0.35)).disabled(true).accessibilityLabel("Redo")
+                Button { } label: { Text("↶").font(.system(size: m.r(0.95), weight: .bold)) }.buttonStyle(HBStyle(minWidth: 1.9, fontSize: 0.95, paddingX: 0.35)).disabled(true).accessibilityLabel("Undo")
+                Button { } label: { Text("↷").font(.system(size: m.r(0.95), weight: .bold)) }.buttonStyle(HBStyle(minWidth: 1.9, fontSize: 0.95, paddingX: 0.35)).disabled(true).accessibilityLabel("Redo")
                 Button(c.on ? "ON" : "OFF") { c.setOn(!c.on) }.buttonStyle(HBStyle(led: .amber, on: c.on))
                 Button("PRESETS") {}.buttonStyle(HBStyle())
                 Button("SLICER") {}.buttonStyle(HBStyle(led: .amber, on: c.value("sl.on") > 0.5))
@@ -167,7 +167,7 @@ struct PatternSection: View {
                     ForEach(0..<TrackLimits.patterns, id: \.self) { i in
                         Button("\(i + 1)") { c.selectPattern(i) }
                             .buttonStyle(HBStyle(size: .normal, minWidth: 0, fontSize: 0.8, letterSpacing: 0, paddingX: 0, led: .amber,
-                                                 on: c.transport != .stopped && c.playingPattern == i, selected: i == sel))
+                                                 on: c.transport != .stopped && c.playingPattern == i, selected: i == sel, fill: true))
                             .overlay(alignment: .topLeading) {   // .has::after — a pattern with steps
                                 if !p.patterns[i].isEmpty { Circle().fill(Color(hex: "#6b6f76")).frame(width: m.r(0.22), height: m.r(0.22)).padding(.leading, m.r(0.3)).padding(.top, m.r(0.3)) }
                             }
@@ -258,7 +258,8 @@ struct SequencerSection: View {
                     .font(PanelFont.ui(fs, 700)).letterSpacing(0.18, size: fs).foregroundStyle(Color(hex: "#9a9ea6")).lineLimit(1)
                 }
                 .padding(.top, m.r(0.1))
-                ForEach(0..<c.trackCount, id: \.self) { t in TrackRow(c: c, t: t).padding(.vertical, m.r(0.22)) }
+                VStack(spacing: m.r(0.22)) { ForEach(0..<c.trackCount, id: \.self) { t in TrackRow(c: c, t: t) } }
+                    .padding(.vertical, m.r(0.22))   // .dmtrk{margin:.22rem 0}: block margins collapse between rows
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -314,7 +315,7 @@ struct TrackRow: View {
             StepKeys(c: c, t: t, steps: tp.steps, length: tp.length, muted: muted)
             HStack(spacing: m.r(0.15)) {   // .dmlen
                 Button("−") {}.buttonStyle(HBStyle())
-                OledView(lines: [Text(String(format: "%02d", tp.length))]).frame(width: m.r(1.9))
+                OledView(lines: [Text(String(format: "%02d", tp.length))], padV: 0.15, padH: 0.3, center: true).frame(width: m.r(1.9))
                 Button("+") {}.buttonStyle(HBStyle())
             }
             Text(tp.division.label)   // .oled select
@@ -375,9 +376,42 @@ struct StepKey: View {
                 }
                 .allowsHitTesting(false)
             }
+            .overlay(alignment: .bottom) {   // em — ×ratchet, ±pitch, chance %, FM ratio
+                if let mk = mark { Text(mk).font(PanelFont.mono(m.r(0.5), 600)).foregroundStyle(Color(hex: "#8b8f96")).lineLimit(1).padding(.bottom, m.r(0.22)).allowsHitTesting(false) }
+            }
+            .overlay(alignment: .topTrailing) {   // .sfx — the step has effects
+                if hasFx { Circle().fill(th.cyan).frame(width: m.r(0.22), height: m.r(0.22)).padding(.trailing, m.r(0.22)).padding(.top, m.r(0.62)).allowsHitTesting(false) }
+            }
+            .overlay(alignment: .topLeading) {   // .srg — ring modulation on this step
+                if step?.ringOn == true { Circle().stroke(Color(hex: "#ffb43c"), lineWidth: 1.5).frame(width: m.r(0.36), height: m.r(0.36)).padding(.leading, m.r(0.2)).padding(.top, m.r(0.55)).allowsHitTesting(false) }
+            }
             .overlay { if selected { RoundedRectangle(cornerRadius: r).stroke(th.cyan, lineWidth: 2) } }
             .opacity(outside ? 0.25 : 1).allowsHitTesting(!outside)
     }
+}
+
+extension StepKey {
+    /// web paintStep(): the key's small print.
+    var mark: String? {
+        guard let v = step else { return nil }
+        var m = ""
+        if v.ratchet > 1 { m += "×\(v.ratchet)" }
+        if v.pitch != 0 { m += (v.pitch > 0 ? "+" : "") + "\(v.pitch)" }
+        if v.chance < 1 { m += "\(Int((Double(v.chance) * 100).rounded()))%" }
+        if v.fmRatio > 0 { m += "r" + shortNumber(Double(v.fmRatio)) }
+        return m.isEmpty ? nil : m
+    }
+    var hasFx: Bool {
+        guard let v = step else { return false }
+        return v.crush > 0 || v.delaySend > 0 || v.reverbSend > 0 || v.fmRatio > 0 || v.fold > 0 || v.shiftSemitones != 0 || v.spectral > 0
+    }
+}
+/// JS +x.toFixed(2): at most two decimals, no trailing zeros.
+func shortNumber(_ x: Double) -> String {
+    var s = String(format: "%.2f", x)
+    while s.hasSuffix("0") { s.removeLast() }
+    if s.hasSuffix(".") { s.removeLast() }
+    return s
 }
 
 struct StepKeyStyle: ButtonStyle {

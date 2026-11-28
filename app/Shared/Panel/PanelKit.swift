@@ -20,6 +20,7 @@ struct HBStyle: ButtonStyle {
     var on = false
     var selected = false                  // outline 2px var(--cyan), offset 1px
     var alignment: Alignment = .center
+    var fill = false                      // stretch to the space offered (grid cells: .dmpats)
 
     func makeBody(configuration: Configuration) -> some View {
         let h = m.r(height ?? (size == .sm ? 1.9 : 2.4)), minW = m.r(minWidth ?? (size == .sm ? 1.9 : 2.6))
@@ -29,7 +30,7 @@ struct HBStyle: ButtonStyle {
             .font(PanelFont.ui(fs, 700)).letterSpacing(letterSpacing, size: fs)
             .foregroundStyle(Color(hex: "#d9d6cd")).lineLimit(1)
             .padding(.horizontal, px)
-            .frame(minWidth: minW - 2, minHeight: h - 2, maxHeight: h - 2, alignment: alignment)
+            .frame(minWidth: minW - 2, maxWidth: fill ? .infinity : nil, minHeight: h - 2, maxHeight: h - 2, alignment: alignment)
             .background {
                 ZStack {
                     if down {
@@ -138,13 +139,17 @@ struct OledView: View {
     @Environment(\.theme) private var th
     var lines: [Text]
     var minWidth: CGFloat = 0     // rem
+    var padV: CGFloat = 0.3       // rem
+    var padH: CGFloat = 0.5       // rem
+    var center = false
     var body: some View {
         let fs = m.r(0.74)
-        VStack(alignment: .leading, spacing: 0) { ForEach(lines.indices, id: \.self) { lines[$0] } }
+        VStack(alignment: center ? .center : .leading, spacing: 0) { ForEach(lines.indices, id: \.self) { lines[$0].lineLimit(1) } }
             .font(PanelFont.mono(fs, 600)).foregroundStyle(th.cyan)
             .lineSpacing(fs * 0.35)
-            .padding(.vertical, m.r(0.3)).padding(.horizontal, m.r(0.5))
-            .frame(minWidth: m.r(minWidth), maxWidth: .infinity, alignment: .topLeading)
+            .fixedSize()
+            .padding(.vertical, m.r(padV)).padding(.horizontal, m.r(padH))
+            .frame(minWidth: m.r(minWidth), maxWidth: .infinity, alignment: center ? .top : .topLeading)
             .background {
                 ZStack {
                     Color(hex: "#030506")
