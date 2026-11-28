@@ -3,7 +3,8 @@ name: TestFlight
 # Archives the app (with its AUv3 extension), signs it with Xcode's automatic signing through the App Store Connect API
 # key, and uploads it to App Store Connect, where it appears in TestFlight after Apple's processing.
 #
-# Needs repository secrets ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (a Team key with the Admin role, so Xcode may create the
+# Needs repository secrets VEKTUR_DRUM_ASC_KEY_ID, VEKTUR_DRUM_ASC_ISSUER_ID, VEKTUR_DRUM_ASC_KEY_P8 (names unique to this
+# app so they can't be confused with another repo's or an organisation's secrets; a Team key with the Admin role, so Xcode may create the
 # extension's App ID, profiles and a cloud-managed distribution certificate). The bundle ID and team are looked up from
 # the App Store Connect app named "Vektur Drum"; repository variables BUNDLE_ID / APPLE_TEAM_ID override the lookup.
 #
@@ -18,16 +19,16 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[testflight]')
     runs-on: macos-15
     env:
-      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      ASC_KEY_ID: ${{ secrets.VEKTUR_DRUM_ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.VEKTUR_DRUM_ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.VEKTUR_DRUM_ASC_KEY_P8 }}
       APP_NAME: Vektur Drum
     steps:
       - uses: actions/checkout@v4
       - name: Check the secrets (names only)
         run: |
-          ok=1; for n in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do if [ -n "${!n}" ]; then echo "$n: set"; else echo "::error::$n is missing"; ok=0; fi; done
-          case "$ASC_KEY_P8" in *"BEGIN PRIVATE KEY"*) ;; *) echo "::error::ASC_KEY_P8 must be the whole .p8 file, BEGIN/END lines included"; ok=0;; esac
+          ok=1; for n in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do if [ -n "${!n}" ]; then echo "VEKTUR_DRUM_$n: set"; else echo "::error::secret VEKTUR_DRUM_$n is missing"; ok=0; fi; done
+          case "$ASC_KEY_P8" in *"BEGIN PRIVATE KEY"*) ;; *) echo "::error::VEKTUR_DRUM_ASC_KEY_P8 must be the whole .p8 file, BEGIN/END lines included"; ok=0;; esac
           [ $ok = 1 ]
       - name: Install the API key
         run: |

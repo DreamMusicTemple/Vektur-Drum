@@ -13,20 +13,19 @@ jobs:
     steps:
       - name: Which secrets are set (names only)
         env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.VEKTUR_DRUM_ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.VEKTUR_DRUM_ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.VEKTUR_DRUM_ASC_KEY_P8 }}
         run: |
-          for n in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do
-            if [ -n "${!n}" ]; then echo "$n: set"; else echo "$n: MISSING"; fi
+          for n in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            if [ -n "${!n}" ]; then echo "VEKTUR_DRUM_$n: set"; else echo "VEKTUR_DRUM_$n: MISSING"; fi
           done
-          case "$ASC_KEY_P8" in *"BEGIN PRIVATE KEY"*) echo "ASC_KEY_P8 looks like a .p8 key";; *) echo "ASC_KEY_P8 does not contain a PEM private key header";; esac
+          case "$ASC_KEY_P8" in *"BEGIN PRIVATE KEY"*) echo "VEKTUR_DRUM_ASC_KEY_P8 looks like a .p8 key";; *) echo "VEKTUR_DRUM_ASC_KEY_P8 does not contain a PEM private key header";; esac
       - name: List apps and App IDs
         env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.VEKTUR_DRUM_ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.VEKTUR_DRUM_ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.VEKTUR_DRUM_ASC_KEY_P8 }}
         run: |
           pip install --quiet pyjwt cryptography requests
           python3 - <<'PY'
