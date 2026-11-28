@@ -27,12 +27,39 @@ final class DrumController {
     var theme = AppearanceTheme.all[0]
     /// Bumped on every parameter change from the panel, so dials redraw (engine values are not observable themselves).
     var paramVersion = 0
+    /// SEQUENCER EDIT (web DRM.edit): a tap selects a step instead of switching it.
+    var editMode = false
+    /// The pattern clipboard (web DRM.clip).
+    var clip: Pattern?
+    /// The toast line (web toast()), cleared after a moment.
+    var toastText: String?
+    @ObservationIgnored var toastTimer: Timer?
+    /// The open window (web: the modals), nil = the panel alone.
+    var window: PanelWindow?
+    /// Pads lit by the engine's envelopes (web paintDrumLive: .pad.hit while the envelope > .08), and the LFO lamps 0…1.
+    var padLit: [Bool] = Array(repeating: false, count: TrackLimits.capacity)
+    var lfoLamp: [Double] = [0, 0, 0]
+    var modSources: [Float] = []
+    // undo / redo (web undo.js): snapshots of the song, captured .45 s after the last change, 60 deep
+    @ObservationIgnored var undoBack: [DrumProject] = []
+    @ObservationIgnored var undoFwd: [DrumProject] = []
+    @ObservationIgnored var undoCur: DrumProject?
+    @ObservationIgnored var undoTimer: Timer?
+    @ObservationIgnored var undoApplying = false
+    var undoVersion = 0
+    /// The sample menu by a track name or pad (web drumSampleMenu), and the file picker it opens.
+    var sampleMenu: SampleMenuRequest?
+    var sampleImportTrack: Int?
+    @ObservationIgnored var suppressNextTap = false
+    /// The PADS window's VEL readout.
+    var lastPadVelocity: Int?
 
     init?(unit: VekturDrumAudioUnit) {
         guard let raw = unit.engine, let keeper = unit.keeper else { return nil }
         self.unit = unit
         engine = DrumEngine(borrowing: raw)
         project = keeper.currentProject()
+        undoCur = project
         keeper.onRestored = { [weak self] _ in self?.reloadFromKeeper() }
         unit.standaloneTempo = project.tempo
         startPolling()
@@ -61,6 +88,14 @@ final class DrumController {
             if tel.chainPosition != chainPosition { chainPosition = tel.chainPosition }
             var steps = tel.currentStep; if steps.count < TrackLimits.capacity { steps += Array(repeating: -1, count: TrackLimits.capacity - steps.count) }
             if steps != currentStep { currentStep = steps }
+            var lit = padLit
+            for t in 0..<min(tel.envelope.count, lit.count) { lit[t] = tel.envelope[t] > 0.08 }
+            if lit != padLit { padLit = lit }
+            if tel.modSources != modSources { modSources = tel.modSources }
+            if tel.modSources.count >= 3 {
+                let l = (0..<3).map { (0.15 + 0.85 * (Double(tel.modSources[$0]) * 0.5 + 0.5) * 100).rounded() / 100 }
+                if l != lfoLamp { lfoLamp = l }
+            }
         }
         if armedRec, let hits = unit.keeper?.takeRecordedHits(), !hits.isEmpty { reloadFromKeeper() }
         gcCount += 1; if gcCount >= 30 { gcCount = 0; engine.collectGarbage() }   // free replaced samples about once a second
@@ -105,11 +140,11 @@ final class DrumController {
     }
     func set(_ key: String, _ v: Double) {
         guard let id = ParameterID(key: key) else { return }
-        engine.setParameter(id, v); paramVersion &+= 1
+        engine.setParameter(id, v); paramVersion &+= 1; dirty()
     }
 
     /// One edit to the song: here (for the panel) and in the unit's keeper (for saving and the plug-in).
-    private func edit(_ f: (inout DrumProject) -> Void) { f(&project); unit.keeper?.update(f) }
+    func edit(_ f: (inout DrumProject) -> Void) { f(&project); unit.keeper?.update(f); dirty() }
 
     // MARK: - names (web drumTrackName)
     static let short = ["KICK", "SNARE", "C.HAT", "O.HAT", "CLAP", "TOM", "RIM", "BELL"]

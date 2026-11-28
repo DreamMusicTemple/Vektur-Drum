@@ -133,13 +133,27 @@ struct ParamKnob: View {
     let key: String
     let label: String
     var format: ((Double) -> String)? = nil
+    var cellWidth: CGFloat = 3.35
+    var knobSize: CGFloat = 2.3
+    /// web dKnob o.set: a custom setter in normalised space (the EQ gain snaps to OFF near 0 dB).
+    var setNormalized: ((Double) -> Void)? = nil
     var body: some View {
         if let spec = ParameterSpec.spec(forKey: key) {
             let v = c.value(key), lo = spec.range.lowerBound, hi = spec.range.upperBound
+            let dflt = ParameterSpec.trackDefault(forKey: key) ?? spec.defaultValue
             KnobCell(label: label, value: spec.normalized(v), centre: lo < 0 && hi > 0 ? spec.normalized(0) : nil,
-                     defaultValue: spec.normalized(spec.defaultValue), text: format?(v) ?? ParamFormat.text(spec, v)) { t in
-                c.set(key, spec.value(atNormalized: t))
+                     defaultValue: spec.normalized(dflt), text: format?(v) ?? ParamFormat.text(spec, v), cellWidth: cellWidth, knobSize: knobSize) { t in
+                if let f = setNormalized { f(t) } else { c.set(key, spec.value(atNormalized: t)) }
             }
         }
+    }
+}
+
+extension ParameterSpec {
+    /// The default of a track parameter on its own track (tracks differ: model, decay, level, pan …), nil for master keys.
+    static func trackDefault(forKey key: String) -> Double? {
+        guard key.first == "t", let dot = key.firstIndex(of: "."), let n = Int(key[key.index(after: key.startIndex)..<dot]), n >= 1, n <= trackDefaults.count else { return nil }
+        let k = String(key[key.index(after: dot)...]), row = trackDefaults[n - 1]
+        return row[k] ?? row["." + k]
     }
 }

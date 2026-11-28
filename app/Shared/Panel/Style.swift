@@ -30,12 +30,14 @@ struct PanelTheme {
     let led: Color, ledHex: String, ledlo: Color, cyan: Color, ice: Color, arc: Color, arcHex: String
     let red = Color(hex: "#ff4d3d"), print = Color(hex: "#9a9ea6"), text = Color(hex: "#e4e1d8")
     let chassis: [Color]      // top, upper, body, section top, section bottom, page   (CHASSIS[k][1…6])
+    let chassisHex: [String]
     let strip: [Color]        // light, mid, dark, lettering                           (STRIPS[k][1…4])
 
     init(_ t: AppearanceTheme) {
         led = Color(hex: t.led); ledHex = t.led; ledlo = Color(hex: mixHex(t.led, "#000000", 0.78))
         cyan = Color(hex: t.display); ice = Color(hex: mixHex(t.display, "#ffffff", 0.6)); arc = Color(hex: t.arc); arcHex = t.arc
-        chassis = (AppearanceTheme.chassis[t.chassis]?.colors ?? AppearanceTheme.chassis["graphite"]!.colors).map { Color(hex: $0) }
+        chassisHex = AppearanceTheme.chassis[t.chassis]?.colors ?? AppearanceTheme.chassis["graphite"]!.colors
+        chassis = chassisHex.map { Color(hex: $0) }
         strip = (AppearanceTheme.strips[t.strip]?.colors ?? AppearanceTheme.strips["alu"]!.colors).map { Color(hex: $0) }
     }
     static let amber = PanelTheme(AppearanceTheme.all[0])
