@@ -38,4 +38,14 @@ final class ParameterLayoutTests: XCTestCase {
         let back = try JSONDecoder().decode(DrumProject.self, from: JSONEncoder().encode(p))
         XCTAssertEqual(back, p)
     }
+
+    /// Every parameter the audio unit publishes has its own address (AUParameterTree throws on duplicates).
+    func testAudioUnitAddressesAreUnique() {
+        var seen = Set<UInt32>()
+        for t in 0..<TrackLimits.playable.upperBound {
+            for spec in ParameterSpec.track { XCTAssertTrue(seen.insert(ParameterID.trackBase + UInt32(t) * ParameterID.trackStride + spec.index).inserted, "t\(t + 1).\(spec.key)") }
+        }
+        for spec in ParameterSpec.master where spec.index < ParameterID.trackBase { XCTAssertTrue(seen.insert(spec.index).inserted, spec.key) }
+    }
+
 }

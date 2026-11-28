@@ -116,7 +116,9 @@ public final class VekturDrumAudioUnit: AUAudioUnit {
             let ps = ParameterSpec.track.map { make($0, ParameterID(address: ParameterID.trackBase + UInt32(t) * ParameterID.trackStride + $0.index), prefix: "_\(t + 1)") }
             tracks.append(AUParameterTree.createGroup(withIdentifier: "track\(t + 1)", name: "Track \(t + 1)", children: ps))
         }
-        let master = ParameterSpec.master.map { make($0, ParameterID(address: ParameterID.masterBase + $0.index), prefix: "") }
+        // The generated master table also lists tracks 10–12 (0.9) at their track addresses (≥ trackBase); those are already
+        // in the track groups above, and AUParameterTree throws on a duplicate address, so the master group keeps only its own.
+        let master = ParameterSpec.master.filter { $0.index < ParameterID.trackBase }.map { make($0, ParameterID(address: ParameterID.masterBase + $0.index), prefix: "") }
         let tree = AUParameterTree.createTree(withChildren: tracks + [AUParameterTree.createGroup(withIdentifier: "master", name: "Master", children: master)])
         tree.implementorValueObserver = { p, v in vd_engine_set_param(e, UInt32(p.address), v) }
         tree.implementorValueProvider = { p in vd_engine_get_param(e, UInt32(p.address)) }
