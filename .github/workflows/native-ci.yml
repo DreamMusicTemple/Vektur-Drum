@@ -94,6 +94,14 @@ jobs:
           done
           DEV=$(xcrun simctl list devices booted -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next((x['udid'] for k in d for x in d[k]), ''))")
           [ -n "$DEV" ] && xcrun simctl spawn "$DEV" log show --last 3m --style compact --predicate 'process == "Vektur Drum"' 2>/dev/null | grep -iE "fault|error|fatal|Vektur Drum:" | tail -40 || true
+      - name: Render the web app with WebKit (same fonts as iPad) and compare
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i --silent playwright@1 >/dev/null && npx playwright install webkit >/dev/null
+          cp "$GITHUB_WORKSPACE/tools/ui_parity_web.mjs" /tmp/pw/ && WEB_INDEX="$GITHUB_WORKSPACE/web/dist/index.html" node /tmp/pw/ui_parity_web.mjs "$GITHUB_WORKSPACE/ui-native/web"
+          cd "$GITHUB_WORKSPACE" && python3 -m pip install --quiet --break-system-packages pillow numpy 2>/dev/null || python3 -m pip install --quiet pillow numpy
+          python3 tools/ui_parity_diff.py ui-native/web ui-native ui-native/diff | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Publish the renders to the ui-renders branch
         if: always() && github.ref_name == 'native-testflight'
         run: |
