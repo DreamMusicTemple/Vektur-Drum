@@ -3,9 +3,12 @@
 import SwiftUI
 
 private struct FlexGrowKey: LayoutValueKey { static let defaultValue: CGFloat = 0 }
+private struct LineBreakKey: LayoutValueKey { static let defaultValue = false }
 extension View {
     /// CSS flex-grow inside a FlowRow.
     func flexGrow(_ g: CGFloat = 1) -> some View { layoutValue(key: FlexGrowKey.self, value: g) }
+    /// CSS flex-basis:100% with no height — the items after it start a new line.
+    func flowLineBreak(_ on: Bool = true) -> some View { layoutValue(key: LineBreakKey.self, value: on) }
 }
 
 struct FlowRow: Layout {
@@ -18,6 +21,7 @@ struct FlowRow: Layout {
     private func lines(_ sub: Subviews, width: CGFloat) -> [Line] {
         var out: [Line] = [], cur = Line()
         for i in sub.indices {
+            if sub[i][LineBreakKey.self] { if !cur.items.isEmpty { out.append(cur); cur = Line() }; continue }
             let w = sub[i].sizeThatFits(.unspecified).width
             let add = (cur.items.isEmpty ? 0 : gap) + w
             if !cur.items.isEmpty && cur.width + add > width + 0.5 { out.append(cur); cur = Line() }
@@ -29,7 +33,11 @@ struct FlowRow: Layout {
     private func widths(_ sub: Subviews, _ line: Line, available: CGFloat) -> [CGFloat] {
         let base = line.items.map { sub[$0].sizeThatFits(.unspecified).width }
         let grow = line.items.map { sub[$0][FlexGrowKey.self] }, total = grow.reduce(0, +)
-        let extra = max(0, available - line.width)
+        let extra = available - line.width
+        if extra < 0 {   // flex-shrink:1 — an item wider than the line shrinks to fit (weighted by its size, as CSS)
+            let sum = base.reduce(0, +)
+            return base.map { b in max(0, b + extra * b / max(sum, 1)) }
+        }
         return zip(base, grow).map { b, g in total > 0 ? b + extra * g / total : b }
     }
 

@@ -62,7 +62,7 @@ struct TopStrip: View {
     let c: DrumController
     var body: some View {
         let lettering = th.strip[3], bfs = m.r(0.82), sfs = m.r(0.55)
-        FlowRow(gap: m.r(0.6), rowGap: m.r(0.3)) {
+        FlowRow(gap: m.r(0.6), rowGap: m.r(m.width <= 760 ? 0.25 : 0.3)) {
             Image(uiImage: UIImage(named: "DMTLogo") ?? UIImage()).resizable().scaledToFit().frame(width: m.r(1.9), height: m.r(1.9)).clipShape(Circle())
                 .shadow(color: .black.opacity(0.45), radius: 3).padding(.trailing, m.r(0.45))
             HStack(alignment: .firstTextBaseline, spacing: 0) {
@@ -80,7 +80,7 @@ struct TopStrip: View {
                 }
             }
             .padding(.trailing, m.r(0.4))
-            Color.clear.frame(width: 0, height: 1).flexGrow()   // .sp
+            Color.clear.frame(width: 0, height: 1).flexGrow().flowLineBreak(m.width <= 760)   // .sp (≤760: flex-basis 100%)
             Group {
                 Button { } label: { Text("↶").font(.system(size: m.r(0.95), weight: .bold)) }.buttonStyle(HBStyle(minWidth: 1.9, fontSize: 0.95, paddingX: 0.35)).disabled(true).accessibilityLabel("Undo")
                 Button { } label: { Text("↷").font(.system(size: m.r(0.95), weight: .bold)) }.buttonStyle(HBStyle(minWidth: 1.9, fontSize: 0.95, paddingX: 0.35)).disabled(true).accessibilityLabel("Redo")
@@ -169,10 +169,11 @@ struct PatternSection: View {
                         Button("\(i + 1)") { c.selectPattern(i) }
                             .buttonStyle(HBStyle(size: .normal, minWidth: 0, fontSize: 0.8, letterSpacing: 0, paddingX: 0, led: .amber,
                                                  on: c.transport != .stopped && c.playingPattern == i, selected: i == sel, fill: true))
+                            .frame(width: m.width <= 700 ? nil : m.r(2.5))   // .dmpats: repeat(8,2.5rem); ≤700px repeat(8,1fr)
+                            .frame(maxWidth: m.width <= 700 ? .infinity : nil)
                             .overlay(alignment: .topLeading) {   // .has::after — a pattern with steps
                                 if !p.patterns[i].isEmpty { Circle().fill(Color(hex: "#6b6f76")).frame(width: m.r(0.22), height: m.r(0.22)).padding(.leading, m.r(0.3)).padding(.top, m.r(0.3)) }
                             }
-                            .frame(maxWidth: .infinity)
                     }
                 }
                 ChainRow {   // .dmchain.dmpatedit
@@ -194,7 +195,6 @@ struct PatternSection: View {
                     Button("+ \(sel + 1)") {}.buttonStyle(HBStyle())
                 }
             }
-            .fixedSize(horizontal: true, vertical: false)
         }
     }
 }
@@ -225,7 +225,7 @@ struct ChainStrip: View {
         HStack(spacing: m.r(0.22)) {
             if chain.isEmpty {
                 Text("empty — tap + or drag a pattern here").font(.system(size: fs, weight: .medium)).foregroundStyle(Color(hex: "#6f747c"))
-                    .padding(.vertical, m.r(0.1)).padding(.horizontal, m.r(0.3)).lineLimit(1)
+                    .padding(.vertical, m.r(0.1)).padding(.horizontal, m.r(0.3)).lineLimit(2)
             } else {
                 ForEach(chain.indices, id: \.self) { i in Text("\(chain[i] + 1)").font(PanelFont.mono(m.r(0.78), 800)) }
             }
@@ -265,6 +265,7 @@ struct SequencerSection: View {
     var body: some View {
         let sel = c.project.selectedPattern
         PanelSection(title: "SEQUENCER", extra: "PATTERN \(sel + 1)", zone: .seq) {
+            HScroller(minContentWidth: m.r(44)) {
             VStack(alignment: .leading, spacing: 0) {
                 SeqGrid(rem: m.rem) {
                     let fs = m.r(0.5)
@@ -279,11 +280,44 @@ struct SequencerSection: View {
                 VStack(spacing: m.r(0.22)) { ForEach(0..<c.trackCount, id: \.self) { t in TrackRow(c: c, t: t) } }
                     .padding(.vertical, m.r(0.22))   // .dmtrk{margin:.22rem 0}: block margins collapse between rows
             }
+            }
         }
         .overlay(alignment: .topTrailing) {
             Button("EDIT") { editMode.toggle() }.buttonStyle(HBStyle(height: 1.5, led: .cyan, on: editMode))
                 .padding(.trailing, m.r(0.5)).padding(.top, m.r(0.2))
         }
+    }
+}
+
+/// overflow-x:auto for content with a min-width: wider content pans sideways with a drag; otherwise it fills the width.
+/// (Hand-made rather than a ScrollView so the reference renders show it too.)
+struct HScroller<Content: View>: View {
+    var minContentWidth: CGFloat
+    @ViewBuilder var content: Content
+    @State private var x: CGFloat = 0
+    @State private var x0: CGFloat?
+    var body: some View {
+        MinWidthPan(minWidth: minContentWidth, offset: x) { content }
+            .clipped()
+            .contentShape(Rectangle())
+            .simultaneousGesture(DragGesture(minimumDistance: 12).onChanged { g in
+                if x0 == nil { x0 = x }
+                x = min(minContentWidth, max(0, (x0 ?? 0) - g.translation.width))
+            }.onEnded { _ in x0 = nil })
+    }
+}
+/// Gives its child max(offered width, minWidth) and shows it shifted left by `offset` (clamped to the overflow).
+struct MinWidthPan: Layout {
+    var minWidth: CGFloat
+    var offset: CGFloat
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let w = proposal.width ?? minWidth, cw = max(w, minWidth)
+        let h = subviews.map { $0.sizeThatFits(ProposedViewSize(width: cw, height: nil)).height }.max() ?? 0
+        return CGSize(width: w, height: h)
+    }
+    func placeSubviews(in b: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let cw = max(b.width, minWidth), off = min(max(0, offset), cw - b.width)
+        for v in subviews { v.place(at: CGPoint(x: b.minX - off, y: b.minY), anchor: .topLeading, proposal: ProposedViewSize(width: cw, height: nil)) }
     }
 }
 

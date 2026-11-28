@@ -126,7 +126,8 @@ struct PanelSection<Content: View>: View {
             if let extra { Text(extra).font(PanelFont.ui(efs, 700)).letterSpacing(0.12, size: efs).foregroundStyle(th.led).padding(.leading, m.r(0.5)) }
         }
         .lineLimit(1).fixedSize()
-        .padding(.leading, m.r(0.45))
+        .frame(height: fs, alignment: .leading)        // line-height:1
+        .padding(.leading, 3 + m.r(0.45))              // border-left:3px + padding-left:.45rem
         .overlay(alignment: .leading) { th.led.frame(width: 3) }
         .brightness(0.12)   // filter: brightness(1.35) on light-grey text
     }
@@ -144,9 +145,10 @@ struct OledView: View {
     var center = false
     var body: some View {
         let fs = m.r(0.74)
-        VStack(alignment: center ? .center : .leading, spacing: 0) { ForEach(lines.indices, id: \.self) { lines[$0].lineLimit(1) } }
+        VStack(alignment: center ? .center : .leading, spacing: 0) {
+            ForEach(lines.indices, id: \.self) { lines[$0].lineLimit(1).frame(height: fs * 1.35) }   // line-height:1.35
+        }
             .font(PanelFont.mono(fs, 600)).foregroundStyle(th.cyan)
-            .lineSpacing(fs * 0.35)
             .fixedSize()
             .padding(.vertical, m.r(padV)).padding(.horizontal, m.r(padH))
             .frame(minWidth: m.r(minWidth), maxWidth: .infinity, alignment: center ? .top : .topLeading)
