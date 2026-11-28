@@ -138,3 +138,32 @@ Current main-panel scores, from `ui-renders`, `REPORT.md`:
 - `app/Shared/DrumController.swift`: actions for the above, forwarding to the existing engine commands and parameters.
 - `app/VekturDrum/ReferenceRender.swift`, `tools/ui_parity_web.mjs`, `tools/ui_parity_diff.py`: render and score each new section and window.
 - **Not changed:** `native/Sources/VekturDrumDSP` (C++ DSP). `VekturDrumAudio` changes only if a command is missing.
+
+## 7. Progress — 28 Nov 2026 (second pass)
+
+Built from the web source, over the existing engine commands, parameters, Exporter, SongGenerator, SampleAnalysis and
+GrooveGenerator — no DSP or engine change. The standalone app and the AUv3 share the same panel (`PanelRoot`).
+
+| Area | Status |
+|---|---|
+| Top strip | wired: preset name, undo/redo (snapshots, 60 deep), every window button |
+| PATTERN | COPY / PASTE / CLEAR, per-pattern SLICER, BARS, CHAIN on/off, chain chips (tap, drag to move, ×), + n, clear |
+| SEQUENCER | LENGTH ±, DIV dropdown, EDIT, hold a step to edit it, long-press a name for the sample menu |
+| PERFORMANCE | pads with velocity by height, lit by the engine, ⤢ PADS window (move, resize, full screen) |
+| SOUND | engines, choke groups, models / FM algorithms + FM dials, LOAD SAMPLE (WAV/FLAC), common dials, LONG, bend group, SAMPLER row |
+| STEP | velocity, pan, pitch, crush, sends, fold, chance, FM ratio, pitch shift, spectral, sampler, ratchet, RING MOD window, STEP ON/OFF |
+| EFFECTS · EQ · TAPE | all dials and dropdowns, EQ curve, FLAT, PING-PONG, MIDI channel |
+| LFO row | rate / division, depth, shape, destination, SYNC, the LFO lamp, source chip, LFO DRAW editor |
+| Modulation | tap a source then a dial to wire it, wired ring and live rim light on every dial, hold a dial for the modulation popup |
+| Windows | PRESETS, SLICER (+ METALISE), MOD (floating / docked), BREAK LAB, GENERATE, EXPORT, SETTINGS (all 7 tabs), RING MOD, PADS |
+| Appearance | 13 themes + your colours, all 11 dial designs, the 3 step designs |
+
+Known gaps (need a decision or a small non-DSP change):
+
+1. Samples inside kits and saved songs: the audio unit is created with no sample library (`AUStateKeeper(engine:library: nil)`),
+   so sample-based factory kits and samples embedded in songs don't load. Samples imported on the device play and slice for the session.
+   Fix: give the unit an App Group sample library (VekturDrumAudio, not DSP) — awaiting approval.
+2. INSERT INPUT in the standalone app: the instrument unit has no input bus; the toggle explains that the FX plug-in does this.
+3. "Yours — saved with the set": the native song format has no slot list, so the 16 slots are kept on the device.
+4. Preset files export / import in the native kit format (`vektur-drum-kits`), not the web's `vektur-pulse-presets` JSON.
+5. Dragging a source chip onto a dial: tap-to-pick then tap-the-dial is in; drag-and-drop is not yet.

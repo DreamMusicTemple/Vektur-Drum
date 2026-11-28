@@ -285,7 +285,7 @@ struct BLSliceRow: View {
     }
 }
 /// Writes one slice setting and hands the slices to the engine.
-struct BLSliceEdit {
+@MainActor struct BLSliceEdit {
     let c: DrumController
     let t: Int
     let sx: SampleSlices
@@ -370,29 +370,46 @@ struct BLPads: View {
                 PanelNote(text: "Tap to play (higher = harder); with REC lit and the pattern playing, slices are recorded into the steps. Hold a pad, then tap a track number above to send that slice.", maxWidth: nil)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: m.r(4.2)), spacing: m.r(0.3))], spacing: m.r(0.3)) {
-                ForEach(sx.slices.indices, id: \.self) { i in
-                    let v = sx.slices[i], col = Color(hex: BreakLabWindow.colours[v.hit.rawValue])
-                    GeometryReader { g in
-                        VStack(alignment: .leading, spacing: m.r(0.1)) {
-                            Text("\(i + 1)").font(.system(size: m.r(0.9), weight: .bold)).foregroundStyle(Color(hex: "#e8e9ec"))
-                            Text(v.hit.name + (v.reverse ? " ◀" : "") + (v.stutter > 0 ? " ×\(v.stutter)" : "")).font(.system(size: m.r(0.55), weight: .semibold)).tracking(0.08 * m.r(0.55)).foregroundStyle(Color(hex: "#9a9ea6"))
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .padding(.vertical, m.r(0.35)).padding(.horizontal, m.r(0.4))
-                        .background(RoundedRectangle(cornerRadius: m.r(0.35)).fill(Color(hex: i == st.sel ? "#2a2b20" : "#1b1c1f")))
-                        .overlay(RoundedRectangle(cornerRadius: m.r(0.35)).stroke(Color(hex: i == st.sel ? "#ffd23d" : "#33363c"), lineWidth: 1))
-                        .overlay(alignment: .leading) { col.frame(width: 4).clipShape(UnevenRoundedRectangle(topLeadingRadius: m.r(0.35), bottomLeadingRadius: m.r(0.35))) }
-                        .contentShape(Rectangle())
-                        .gesture(DragGesture(minimumDistance: 0).onChanged { d in
-                            if st.sel != i || d.translation == .zero { st.sel = i; c.hitSlice(t, i, velocity127: 50 + 77 * min(1, max(0, 1 - d.startLocation.y / max(1, g.size.height)))) }
-                        })
-                    }
-                    .frame(height: m.r(2.9))
-                    .accessibilityLabel("Slice \(i + 1), \(v.hit.name)").accessibilityAddTraits(.isButton).accessibilityAction { c.hitSlice(t, i, velocity127: 100) }
-                }
+                ForEach(sx.slices.indices, id: \.self) { i in BLPad(c: c, t: t, i: i, v: sx.slices[i], st: $st) }
             }
         }
         .padding(.top, m.r(0.4))
+    }
+}
+
+struct BLPad: View {
+    @Environment(\.panel) private var m
+    let c: DrumController
+    let t: Int
+    let i: Int
+    let v: SliceSettings
+    @Binding var st: BLState
+    var body: some View {
+        let col: Color = Color(hex: BreakLabWindow.colours[v.hit.rawValue])
+        let on: Bool = i == st.sel
+        let info: String = v.hit.name + (v.reverse ? " ◀" : "") + (v.stutter > 0 ? " ×\(v.stutter)" : "")
+        GeometryReader { g in
+            VStack(alignment: .leading, spacing: m.r(0.1)) {
+                Text("\(i + 1)").font(.system(size: m.r(0.9), weight: .bold)).foregroundStyle(Color(hex: "#e8e9ec"))
+                Text(info).font(.system(size: m.r(0.55), weight: .semibold)).tracking(0.08 * m.r(0.55)).foregroundStyle(Color(hex: "#9a9ea6"))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.vertical, m.r(0.35)).padding(.horizontal, m.r(0.4))
+            .background(RoundedRectangle(cornerRadius: m.r(0.35)).fill(Color(hex: on ? "#2a2b20" : "#1b1c1f")))
+            .overlay(RoundedRectangle(cornerRadius: m.r(0.35)).stroke(Color(hex: on ? "#ffd23d" : "#33363c"), lineWidth: 1))
+            .overlay(alignment: .leading) { col.frame(width: 4) }
+            .clipShape(RoundedRectangle(cornerRadius: m.r(0.35)))
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0).onChanged { d in touch(d, g.size.height) })
+        }
+        .frame(height: m.r(2.9))
+        .accessibilityLabel("Slice \(i + 1), \(v.hit.name)").accessibilityAddTraits(.isButton).accessibilityAction { c.hitSlice(t, i, velocity127: 100) }
+    }
+    private func touch(_ d: DragGesture.Value, _ h: CGFloat) {
+        guard d.translation == .zero else { return }
+        st.sel = i
+        let k: Double = Double(min(1, max(0, 1 - d.startLocation.y / max(1, h))))
+        c.hitSlice(t, i, velocity127: 50 + 77 * k)
     }
 }
 
