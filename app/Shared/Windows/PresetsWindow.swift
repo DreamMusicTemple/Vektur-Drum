@@ -32,33 +32,8 @@ struct PresetsWindow: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Current: \(cur.isEmpty ? "—" : cur) · a drum preset is the kit with its 8 patterns and chain").font(PanelFont.ui(m.r(0.8), 400)).foregroundStyle(WinStyle.text).opacity(0.75)
                     .padding(.top, -m.r(0.4)).padding(.bottom, m.r(0.2))
-                PresetHeading(text: "Factory — \(F.count)")
-                FlowRow(gap: m.r(0.25), rowGap: m.r(0.25)) {
-                    ForEach(groups, id: \.self) { g in Button(g.uppercased()) { cat = g }.buttonStyle(HBStyle(led: .amber, on: cat == g)) }
-                }
-                .padding(.top, m.r(0.1)).padding(.bottom, m.r(0.35))
-                ScrollView(.vertical) {
-                    PresetGrid {
-                        ForEach(F.indices.filter { show(F[$0]) }, id: \.self) { i in
-                            PresetTile(top: F[i].category ?? "", name: F[i].name, empty: false, current: cur == F[i].name, selected: sel?.src == "f" && sel?.i == i) { sel = ("f", i); c.loadKit(F[i]) }
-                        }
-                    }.padding(.trailing, m.r(0.2))
-                }
-                .frame(maxHeight: m.r(34 * 0.01 * 60))
-                FlowRow(gap: m.r(0.3), rowGap: m.r(0.3)) {   // .prebank
-                    Text("YOURS").font(PanelFont.ui(m.r(0.6), 700)).tracking(0.16 * m.r(0.6)).foregroundStyle(WinStyle.text).opacity(0.7)
-                    PanelSelect(options: ["Set — 16 slots, saved on this device (\(KitStore.bank(0).count))"] + (1...KitBanks.count).map { b in String(format: "%02d · %@ (%d)", b, KitStore.bank(b).name, KitStore.bank(b).count) },
-                                selected: bank, fontSize: 0.8, label: "User bank") { bank = $0; sel = nil }
-                    Button("◀") { bank = (bank + KitBanks.count) % (KitBanks.count + 1); sel = nil }.buttonStyle(HBStyle())
-                    Button("▶") { bank = (bank + 1) % (KitBanks.count + 1); sel = nil }.buttonStyle(HBStyle())
-                    if isBank {
-                        Button("RENAME BANK") { bankRename = KitStore.bank(bank).name }.buttonStyle(HBStyle())
-                        Button("EXPORT BANK") { let b = KitStore.bank(bank); if b.count == 0 { c.toast("This bank is empty") } else { export(b.slots.compactMap { $0 }, name: b.name) } }.buttonStyle(HBStyle())
-                        Button("SET → BANK") { setToBank() }.buttonStyle(HBStyle())
-                        Button("CLEAR BANK") { if KitStore.bank(bank).count > 0 { confirmClear = true } }.buttonStyle(HBStyle())
-                    }
-                }
-                .padding(.top, m.r(0.7)).padding(.bottom, m.r(0.1))
+                factorySection(F: F, groups: groups, cur: cur)
+                bankRow(isBank)
                 PresetHeading(text: isBank ? "\(KitStore.bank(bank).name) — \(KitBanks.slots) slots, on this device (every set)" : "Yours — 16 slots")
                 ScrollView(.vertical) {
                     PresetGrid {
@@ -73,21 +48,7 @@ struct PresetsWindow: View {
                     }.padding(.trailing, m.r(0.2))
                 }
                 .frame(maxHeight: isBank ? m.r(46 * 0.01 * 60) : nil)
-                FlowRow(gap: m.r(0.4), rowGap: m.r(0.4)) {   // .prebtns
-                    Button("INIT · blank kit") { if let k = F.first(where: { $0.isInit }) { c.loadKit(k) } }.buttonStyle(CButton())
-                    Button(userSel ? "Save current to slot \(sel!.i + 1)" : "Save current…") {
-                        let i = userSel ? sel!.i : (u.firstIndex { $0 == nil } ?? -1)
-                        if i < 0 { c.toast("All \(u.count) slots are full: delete one first") } else { naming = (i, u[i]?.name ?? (cur.isEmpty ? "My kit" : cur + " (edit)")) }
-                    }.buttonStyle(CButton())
-                    Button("Rename…") { renaming = selKit?.name }.buttonStyle(CButton()).disabled(!(userSel && selKit != nil))
-                    Button("Delete") { confirmDelete = true }.buttonStyle(CButton()).disabled(!(userSel && selKit != nil))
-                    Button("Export") { if let k = selKit { export([k], name: k.name) } }.buttonStyle(CButton()).disabled(selKit == nil)
-                    if !isBank { Button("Export all yours") { export(u.compactMap { $0 }, name: "set-kits") }.buttonStyle(CButton()).disabled(!u.contains { $0 != nil }) }
-                    if selKit != nil { Button(isBank ? "Copy to set" : "Copy to bank…") { if isBank { copy(selKit!, to: 0) } else { copyBank = "1" } }.buttonStyle(CButton()) }
-                    Button(isBank ? "Import into bank…" : "Import…") { importing = true }.buttonStyle(CButton())
-                }
-                .padding(.top, m.r(0.9)).padding(.bottom, m.r(0.5))
-                .opacity(1)
+                actionRow(F: F, u: u, cur: cur, selKit: selKit, userSel: userSel, isBank: isBank)
                 HelpText(text: "Pick YOURS: 16 slots, or one of 20 banks of 99 presets kept on this device. Tap a preset to load it. Tap an empty slot to save the current kit and patterns there; select one of yours to overwrite, rename, delete or export it. Import adds the presets in a file to your empty slots. Your MIDI channel never changes.")
             }
             .id(version)
@@ -129,6 +90,54 @@ struct PresetsWindow: View {
             c.toast(added > 0 ? "Imported \(added) preset\(added > 1 ? "s" : "")" + (left > 0 ? " · \(left) skipped: no empty slots" : "") : "No empty slots: delete one of yours first")
         }
         .sheet(isPresented: Binding(get: { exportURL != nil }, set: { if !$0 { exportURL = nil } })) { if let u = exportURL { FileSaver(urls: [u]) { c.toast($0); exportURL = nil } } }
+    }
+    @ViewBuilder private func factorySection(F: [Kit], groups: [String], cur: String) -> some View {
+                PresetHeading(text: "Factory — \(F.count)")
+                FlowRow(gap: m.r(0.25), rowGap: m.r(0.25)) {
+                    ForEach(groups, id: \.self) { g in Button(g.uppercased()) { cat = g }.buttonStyle(HBStyle(led: .amber, on: cat == g)) }
+                }
+                .padding(.top, m.r(0.1)).padding(.bottom, m.r(0.35))
+                ScrollView(.vertical) {
+                    PresetGrid {
+                        ForEach(F.indices.filter { show(F[$0]) }, id: \.self) { i in
+                            PresetTile(top: F[i].category ?? "", name: F[i].name, empty: false, current: cur == F[i].name, selected: sel?.src == "f" && sel?.i == i) { sel = ("f", i); c.loadKit(F[i]) }
+                        }
+                    }.padding(.trailing, m.r(0.2))
+                }
+                .frame(maxHeight: m.r(34 * 0.01 * 60))
+    }
+    @ViewBuilder private func bankRow(_ isBank: Bool) -> some View {
+                FlowRow(gap: m.r(0.3), rowGap: m.r(0.3)) {   // .prebank
+                    Text("YOURS").font(PanelFont.ui(m.r(0.6), 700)).tracking(0.16 * m.r(0.6)).foregroundStyle(WinStyle.text).opacity(0.7)
+                    PanelSelect(options: ["Set — 16 slots, saved on this device (\(KitStore.bank(0).count))"] + (1...KitBanks.count).map { b in String(format: "%02d · %@ (%d)", b, KitStore.bank(b).name, KitStore.bank(b).count) },
+                                selected: bank, fontSize: 0.8, label: "User bank") { bank = $0; sel = nil }
+                    Button("◀") { bank = (bank + KitBanks.count) % (KitBanks.count + 1); sel = nil }.buttonStyle(HBStyle())
+                    Button("▶") { bank = (bank + 1) % (KitBanks.count + 1); sel = nil }.buttonStyle(HBStyle())
+                    if isBank {
+                        Button("RENAME BANK") { bankRename = KitStore.bank(bank).name }.buttonStyle(HBStyle())
+                        Button("EXPORT BANK") { let b = KitStore.bank(bank); if b.count == 0 { c.toast("This bank is empty") } else { export(b.slots.compactMap { $0 }, name: b.name) } }.buttonStyle(HBStyle())
+                        Button("SET → BANK") { setToBank() }.buttonStyle(HBStyle())
+                        Button("CLEAR BANK") { if KitStore.bank(bank).count > 0 { confirmClear = true } }.buttonStyle(HBStyle())
+                    }
+                }
+                .padding(.top, m.r(0.7)).padding(.bottom, m.r(0.1))
+    }
+    @ViewBuilder private func actionRow(F: [Kit], u: [Kit?], cur: String, selKit: Kit?, userSel: Bool, isBank: Bool) -> some View {
+                FlowRow(gap: m.r(0.4), rowGap: m.r(0.4)) {   // .prebtns
+                    Button("INIT · blank kit") { if let k = F.first(where: { $0.isInit }) { c.loadKit(k) } }.buttonStyle(CButton())
+                    Button(userSel ? "Save current to slot \(sel!.i + 1)" : "Save current…") {
+                        let i = userSel ? sel!.i : (u.firstIndex { $0 == nil } ?? -1)
+                        if i < 0 { c.toast("All \(u.count) slots are full: delete one first") } else { naming = (i, u[i]?.name ?? (cur.isEmpty ? "My kit" : cur + " (edit)")) }
+                    }.buttonStyle(CButton())
+                    Button("Rename…") { renaming = selKit?.name }.buttonStyle(CButton()).disabled(!(userSel && selKit != nil))
+                    Button("Delete") { confirmDelete = true }.buttonStyle(CButton()).disabled(!(userSel && selKit != nil))
+                    Button("Export") { if let k = selKit { export([k], name: k.name) } }.buttonStyle(CButton()).disabled(selKit == nil)
+                    if !isBank { Button("Export all yours") { export(u.compactMap { $0 }, name: "set-kits") }.buttonStyle(CButton()).disabled(!u.contains { $0 != nil }) }
+                    if selKit != nil { Button(isBank ? "Copy to set" : "Copy to bank…") { if isBank { copy(selKit!, to: 0) } else { copyBank = "1" } }.buttonStyle(CButton()) }
+                    Button(isBank ? "Import into bank…" : "Import…") { importing = true }.buttonStyle(CButton())
+                }
+                .padding(.top, m.r(0.9)).padding(.bottom, m.r(0.5))
+                .opacity(1)
     }
     private var slots: [Kit?] { _ = version; let b = KitStore.bank(bank); return bank == 0 ? Array(b.slots.prefix(16)) : b.slots }
     private func show(_ k: Kit) -> Bool { cat == "All" || (cat == "More" ? !Self.big.contains(k.category ?? "") : k.category == cat) }
